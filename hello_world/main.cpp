@@ -22,7 +22,7 @@ class HelloWorld final : public HookInjection {
               << ")" << std::endl;
   }
 
-  bool OnGetAsyncKeyState(int vKey) override { return false; }
+  KeyState OnGetAsyncKeyState(int vKey) override { return {}; }
 
  private:
   std::ofstream hello_log;

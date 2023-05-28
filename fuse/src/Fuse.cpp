@@ -10,8 +10,25 @@ static BOOL(WINAPI* RealPeekMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin
                                       UINT wRemoveMsg) = PeekMessageA;
 
 SHORT WINAPI OverrideGetAsyncKeyState(int vKey) {
+  KeyState final_state = {};
+
   for (auto& hook : Fuse::Get().GetHooks()) {
-    hook->OnGetAsyncKeyState(vKey);
+    KeyState state = hook->OnGetAsyncKeyState(vKey);
+
+    if (state.forced) {
+      final_state.forced = true;
+      final_state.pressed = state.pressed;
+    } else {
+      final_state.pressed = final_state.pressed || state.pressed;
+    }
+  }
+
+  if (final_state.forced && !final_state.pressed) {
+    // If the result is forced and not pressed, then we want to return zero here to stop the actual keyboard detection
+    // in the real function.
+    return 0;
+  } else if (final_state.pressed) {
+    return (SHORT)0x8000;
   }
 
   return RealGetAsyncKeyState(vKey);

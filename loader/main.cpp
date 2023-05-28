@@ -6,10 +6,9 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <vector>
 
 std::ofstream debug_log;
-
-const char* kLoadList[] = {"hello_world.dll"};
 
 static std::string GetLocalPath() {
   char path[MAX_PATH];
@@ -30,17 +29,39 @@ static std::string GetSystemLibrary(const char* library) {
   return result;
 }
 
-void InitializeLoader() {
-  debug_log.open("fuse_loader.log", std::ios::out);
+static std::vector<std::string> GetLoadRequests(const char* filename) {
+  std::vector<std::string> requests;
 
+  std::ifstream in(filename, std::ios::in);
+
+  if (!in.good()) return requests;
+
+  std::string line;
+  line.reserve(256);
+
+  while (std::getline(in, line)) {
+    if (line.length() > 0) {
+      requests.push_back(line);
+    }
+  }
+
+  return requests;
+}
+
+void InitializeLoader() {
   std::string base_path = GetLocalPath();
 
-  // TODO: Grab these from conf file
-  size_t load_count = sizeof(kLoadList) / sizeof(*kLoadList);
+  debug_log.open("fuse_loader.log", std::ios::out);
+
+  debug_log << "Reading config file." << std::endl;
+
+  std::vector<std::string> requests = GetLoadRequests("fuse.cfg");
+
+  size_t load_count = requests.size();
   debug_log << "Attempting to load " << load_count << (load_count == 1 ? " library" : " libraries") << std::endl;
 
   for (size_t i = 0; i < load_count; ++i) {
-    std::string full_path = base_path + "\\" + std::string(kLoadList[i]);
+    std::string full_path = base_path + "\\" + requests[i];
 
     HMODULE loaded_module = LoadLibrary(full_path.c_str());
     debug_log << full_path << ": " << (loaded_module ? "Success" : "Failure") << std::endl;
