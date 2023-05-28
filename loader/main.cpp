@@ -9,7 +9,7 @@
 
 std::ofstream debug_log;
 
-const char* kLoadList[] = {"marvin.dll"};
+const char* kLoadList[] = {"hello_world.dll"};
 
 static std::string GetLocalPath() {
   char path[MAX_PATH];
