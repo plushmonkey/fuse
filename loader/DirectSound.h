@@ -48,4 +48,6 @@ struct DirectSound {
   static DirectSound Load(HMODULE dsound);
 };
 
+extern DirectSound g_DirectSound;
+
 }  // namespace fuse
