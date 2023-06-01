@@ -1,5 +1,6 @@
 #include <fuse/Platform.h>
 //
+#include <ddraw.h>
 #include <detours.h>
 #include <fuse/Fuse.h>
 
@@ -8,6 +9,7 @@ namespace fuse {
 static SHORT(WINAPI* RealGetAsyncKeyState)(int vKey) = GetAsyncKeyState;
 static BOOL(WINAPI* RealPeekMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax,
                                       UINT wRemoveMsg) = PeekMessageA;
+static HRESULT(STDMETHODCALLTYPE* RealBlt)(LPDIRECTDRAWSURFACE, LPRECT, LPDIRECTDRAWSURFACE, LPRECT, DWORD, LPDDBLTFX);
 
 SHORT WINAPI OverrideGetAsyncKeyState(int vKey) {
   KeyState final_state = {};
@@ -43,6 +45,20 @@ BOOL WINAPI OverridePeekMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UIN
   }
 
   return RealPeekMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg);
+}
+
+HRESULT STDMETHODCALLTYPE OverrideBlt(LPDIRECTDRAWSURFACE surface, LPRECT dest_rect, LPDIRECTDRAWSURFACE next_surface,
+                                      LPRECT src_rect, DWORD flags, LPDDBLTFX fx) {
+  u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;
+  LPDIRECTDRAWSURFACE primary_surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x40);
+  LPDIRECTDRAWSURFACE back_surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x44);
+
+  // Check if flipping. I guess there's a full screen blit instead of flip when running without vsync?
+  if (surface == primary_surface && next_surface == back_surface && fx == 0) {
+    Fuse::Get().GetRenderer().Render();
+  }
+
+  return RealBlt(surface, dest_rect, next_surface, src_rect, flags, fx);
 }
 
 void Fuse::Inject() {
@@ -92,6 +108,28 @@ void Fuse::Update() {
       return;
     }
   }
+
+  if (!renderer.injected) {
+    u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;
+    if (graphics_addr) {
+      LPDIRECTDRAWSURFACE surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x44);
+
+      if (surface) {
+        void** vtable = (*(void***)surface);
+        RealBlt = (HRESULT(STDMETHODCALLTYPE*)(LPDIRECTDRAWSURFACE surface, LPRECT, LPDIRECTDRAWSURFACE, LPRECT, DWORD,
+                                               LPDDBLTFX))vtable[5];
+        DetourRestoreAfterWith();
+
+        DetourTransactionBegin();
+        DetourUpdateThread(GetCurrentThread());
+        DetourAttach(&(PVOID&)RealBlt, OverrideBlt);
+        DetourTransactionCommit();
+        renderer.injected = true;
+      }
+    }
+  }
+
+  renderer.Reset();
 
   ReadPlayers();
   ReadWeapons();

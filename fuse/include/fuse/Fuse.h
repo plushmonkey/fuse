@@ -4,6 +4,7 @@
 #include <fuse/HookInjection.h>
 #include <fuse/Player.h>
 #include <fuse/Weapon.h>
+#include <fuse/render/Renderer.h>
 
 #include <memory>
 #include <string>
@@ -29,6 +30,8 @@ class Fuse {
   void Inject();
   void Update();
 
+  render::Renderer& GetRenderer() { return renderer; }
+
   Player* GetPlayer() { return main_player; }
   std::string GetName();
 
@@ -46,6 +49,8 @@ class Fuse {
 
   std::vector<Player> players;
   std::vector<Weapon> weapons;
+
+  render::Renderer renderer;
 
   ShipStatus ship_status;
   Player* main_player = nullptr;

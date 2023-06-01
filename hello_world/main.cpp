@@ -3,29 +3,24 @@
 
 using namespace fuse;
 
+#include <format>
 #include <fstream>
 
 class HelloWorld final : public HookInjection {
  public:
-  HelloWorld() { hello_log.open("hello.log", std::ios::out); }
-  ~HelloWorld() { hello_log.close(); }
-
   void OnUpdate() override {
+    std::string output = "Hello, world.";
+
     Player* player = Fuse::Get().GetPlayer();
 
-    if (!player) {
-      hello_log << "Hello, world." << std::endl;
-      return;
+    if (player) {
+      output = std::format("Hello, {}. You are at ({:.2f}, {:.2f}).", player->name, player->position.x, player->position.y);
     }
 
-    hello_log << "Hello, " << player->name << ". You are at (" << player->position.x << ", " << player->position.y
-              << ")" << std::endl;
+    Fuse::Get().GetRenderer().RenderText(output, Vector2f(300, 312), render::TextColor::Fuchsia);
   }
 
   KeyState OnGetAsyncKeyState(int vKey) override { return {}; }
-
- private:
-  std::ofstream hello_log;
 };
 
 BOOL WINAPI DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID reserved) {
