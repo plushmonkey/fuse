@@ -98,16 +98,34 @@ std::string Fuse::GetName() {
   return name;
 }
 
-void Fuse::Update() {
-  if (game_address == 0) {
+bool Fuse::UpdateMemory() {
+  if (!module_base_continuum) {
     module_base_continuum = exe_process.GetModuleBase("Continuum.exe");
-    module_base_menu = exe_process.GetModuleBase("menu040.dll");
-    game_address = exe_process.ReadU32(module_base_continuum + 0xC1AFC);
 
-    if (game_address == 0) {
-      return;
-    }
+    if (module_base_continuum == 0) return false;
   }
+
+  if (!module_base_menu) {
+    module_base_menu = exe_process.GetModuleBase("menu040.dll");
+
+    if (module_base_menu == 0) return false;
+  }
+
+  game_address = exe_process.ReadU32(module_base_continuum + 0xC1AFC);
+
+  if (game_address == 0) {
+    main_player = nullptr;
+    player_id = 0xFFFF;
+    return false;
+  }
+
+  return true;
+}
+
+void Fuse::Update() {
+  renderer.Reset();
+
+  if (!UpdateMemory()) return;
 
   if (!renderer.injected) {
     u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;
@@ -128,8 +146,6 @@ void Fuse::Update() {
       }
     }
   }
-
-  renderer.Reset();
 
   ReadPlayers();
   ReadWeapons();
@@ -160,6 +176,8 @@ void Fuse::ReadPlayers() {
   const size_t kEnergyOffset2 = 0x20C;
 
   players.clear();
+  main_player = nullptr;
+  player_id = 0xFFFF;
 
   if (game_address == 0) return;
 
@@ -170,6 +188,8 @@ void Fuse::ReadPlayers() {
   if (players_addr == 0 || count_addr == 0) return;
 
   size_t count = exe_process.ReadU32(count_addr) & 0xFFFF;
+
+  std::string my_name = GetName();
 
   for (size_t i = 0; i < count; ++i) {
     MemoryAddress player_addr = exe_process.ReadU32(players_addr + (i * 4));
@@ -196,7 +216,7 @@ void Fuse::ReadPlayers() {
 
     player.bounty = *(u32*)(player_addr + kBountyOffset1) + *(u32*)(player_addr + kBountyOffset2);
 
-    if (player.id == player_id) {
+    if (player.name == my_name) {
       // Energy calculation @4485FA
       u32 energy1 = exe_process.ReadU32(player_addr + kEnergyOffset1);
       u32 energy2 = exe_process.ReadU32(player_addr + kEnergyOffset2);
@@ -205,6 +225,15 @@ void Fuse::ReadPlayers() {
       u64 energy = ((combined * (u64)0x10624DD3) >> 32) >> 6;
 
       player.energy = static_cast<uint16_t>(energy);
+
+      // @448D37
+      ship_status.rotation = *(u32*)(player_addr + 0x278) + *(u32*)(player_addr + 0x274);
+      ship_status.recharge = *(u32*)(player_addr + 0x1E8) + *(u32*)(player_addr + 0x1EC);
+      ship_status.shrapnel = *(u32*)(player_addr + 0x2A8) + *(u32*)(player_addr + 0x2AC);
+      ship_status.thrust = *(u32*)(player_addr + 0x244) + *(u32*)(player_addr + 0x248);
+      ship_status.speed = *(u32*)(player_addr + 0x350) + *(u32*)(player_addr + 0x354);
+
+      player_id = player.id;
     } else {
       u32 first = *(u32*)(player_addr + 0x150);
       u32 second = *(u32*)(player_addr + 0x154);
@@ -213,16 +242,13 @@ void Fuse::ReadPlayers() {
     }
 
     players.emplace_back(player);
+  }
 
+  // Get pointer to the main player after updating the player list because std::vector does not preserve address
+  for (Player& player : players) {
     if (player.id == player_id) {
-      main_player = &players.back();
-
-      // @448D37
-      ship_status.rotation = *(u32*)(player_addr + 0x278) + *(u32*)(player_addr + 0x274);
-      ship_status.recharge = *(u32*)(player_addr + 0x1E8) + *(u32*)(player_addr + 0x1EC);
-      ship_status.shrapnel = *(u32*)(player_addr + 0x2A8) + *(u32*)(player_addr + 0x2AC);
-      ship_status.thrust = *(u32*)(player_addr + 0x244) + *(u32*)(player_addr + 0x248);
-      ship_status.speed = *(u32*)(player_addr + 0x350) + *(u32*)(player_addr + 0x354);
+      main_player = &player;
+      break;
     }
   }
 }

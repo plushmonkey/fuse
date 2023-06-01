@@ -14,10 +14,10 @@ class HelloWorld final : public HookInjection {
     Player* player = Fuse::Get().GetPlayer();
 
     if (player) {
-      output = std::format("Hello, {}. You are at ({:.2f}, {:.2f}).", player->name, player->position.x, player->position.y);
+      output = std::format("Hello, {} ({}). You are at ({:.2f}, {:.2f}).", player->name, player->id, player->position.x, player->position.y);
     }
 
-    Fuse::Get().GetRenderer().RenderText(output, Vector2f(300, 312), render::TextColor::Fuchsia);
+    Fuse::Get().GetRenderer().RenderText(output, Vector2f(300, 300), render::TextColor::Yellow);
   }
 
   KeyState OnGetAsyncKeyState(int vKey) override { return {}; }

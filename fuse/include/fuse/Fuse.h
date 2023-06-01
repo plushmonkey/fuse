@@ -42,6 +42,8 @@ class Fuse {
  private:
   Fuse() {}
 
+  bool UpdateMemory();
+
   void ReadPlayers();
   void ReadWeapons();
 

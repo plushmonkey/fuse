@@ -16,7 +16,12 @@ void Renderer::Render() {
   if (!injected) return;
 
   u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;
+
+  if (!graphics_addr) return;
+
   LPDIRECTDRAWSURFACE back_surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x44);
+
+  if (!back_surface) return;
 
   typedef void(__fastcall * RenderTextFunc)(void* This, void* thiscall_garbage, int x, int y, const char* text,
                                             int zero, int length, u8 alpha);
