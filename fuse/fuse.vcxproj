@@ -165,7 +165,7 @@
   <ItemGroup>
     <ClCompile Include="src\ExeProcess.cpp" />
     <ClCompile Include="src\Fuse.cpp" />
-    <ClCompile Include="src\render\Render.cpp" />
+    <ClCompile Include="src\render\Renderer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
