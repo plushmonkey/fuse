@@ -16,3 +16,13 @@ Use the provided MSVC solution to build in x86 release mode.
 ## Fuse library
 In addition to the loader, there is a static library provided for hooking into the gameplay loop and reading common data structures such as player data and weapon data.  
 Use the hello_world project as an example of using the library.
+
+## Examples
+#### hello_world
+A very simple example of injecting into the main update loop and rendering some text.
+
+#### multicont
+Overrides the mutex checks so multiple Continuum clients can be launched at once.
+
+#### menu_controller
+Sets the active profile index while on the menu screen. It gets this index from launching Continuum with an index argument.

@@ -39,10 +39,10 @@ class Fuse {
 
   const std::vector<std::unique_ptr<HookInjection>>& GetHooks() const { return hooks; }
 
+  bool UpdateMemory();
+
  private:
   Fuse() {}
-
-  bool UpdateMemory();
 
   void ReadPlayers();
   void ReadWeapons();

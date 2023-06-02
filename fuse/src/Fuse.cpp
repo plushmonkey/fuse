@@ -9,6 +9,7 @@ namespace fuse {
 static SHORT(WINAPI* RealGetAsyncKeyState)(int vKey) = GetAsyncKeyState;
 static BOOL(WINAPI* RealPeekMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax,
                                       UINT wRemoveMsg) = PeekMessageA;
+static BOOL(WINAPI* RealGetMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax) = GetMessageA;
 static HRESULT(STDMETHODCALLTYPE* RealBlt)(LPDIRECTDRAWSURFACE, LPRECT, LPDIRECTDRAWSURFACE, LPRECT, DWORD, LPDDBLTFX);
 
 SHORT WINAPI OverrideGetAsyncKeyState(int vKey) {
@@ -47,6 +48,16 @@ BOOL WINAPI OverridePeekMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UIN
   return RealPeekMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg);
 }
 
+BOOL WINAPI OverrideGetMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax) {
+  Fuse::Get().UpdateMemory();
+
+  for (auto& hook : Fuse::Get().GetHooks()) {
+    hook->OnMenuUpdate();
+  }
+
+  return RealGetMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax);
+}
+
 HRESULT STDMETHODCALLTYPE OverrideBlt(LPDIRECTDRAWSURFACE surface, LPRECT dest_rect, LPDIRECTDRAWSURFACE next_surface,
                                       LPRECT src_rect, DWORD flags, LPDDBLTFX fx) {
   u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;
@@ -74,6 +85,7 @@ void Fuse::Inject() {
     DetourUpdateThread(GetCurrentThread());
     DetourAttach(&(PVOID&)RealGetAsyncKeyState, OverrideGetAsyncKeyState);
     DetourAttach(&(PVOID&)RealPeekMessageA, OverridePeekMessageA);
+    DetourAttach(&(PVOID&)RealGetMessageA, OverrideGetMessageA);
     DetourTransactionCommit();
     initialized = true;
   }
