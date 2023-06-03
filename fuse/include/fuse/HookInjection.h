@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fuse/Platform.h>
+
 namespace fuse {
 
 struct KeyState {
@@ -10,7 +12,7 @@ struct KeyState {
 class HookInjection {
  public:
   virtual void OnUpdate(){};
-  virtual void OnMenuUpdate(){};
+  virtual void OnMenuUpdate(LPMSG lpMsg, HWND hWnd){};
 
   // Return true if the key should be pressed
   virtual KeyState OnGetAsyncKeyState(int vKey) { return {}; }

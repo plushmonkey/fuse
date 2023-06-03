@@ -51,11 +51,14 @@ BOOL WINAPI OverridePeekMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UIN
 BOOL WINAPI OverrideGetMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax) {
   Fuse::Get().UpdateMemory();
 
+  // Run the real GetMessage so the hook can process the message.
+  BOOL result = RealGetMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax);
+
   for (auto& hook : Fuse::Get().GetHooks()) {
-    hook->OnMenuUpdate();
+    hook->OnMenuUpdate(lpMsg, hWnd);
   }
 
-  return RealGetMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax);
+  return result;
 }
 
 HRESULT STDMETHODCALLTYPE OverrideBlt(LPDIRECTDRAWSURFACE surface, LPRECT dest_rect, LPDIRECTDRAWSURFACE next_surface,
