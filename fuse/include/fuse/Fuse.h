@@ -20,6 +20,12 @@ struct ShipStatus {
   u32 shrapnel = 0;
 };
 
+struct GameMemory {
+  MemoryAddress module_base_continuum = 0;
+  MemoryAddress module_base_menu = 0;
+  MemoryAddress game_address = 0;
+};
+
 class Fuse {
  public:
   static Fuse& Get() {
@@ -31,6 +37,7 @@ class Fuse {
   void Update();
 
   render::Renderer& GetRenderer() { return renderer; }
+  ExeProcess& GetExeProcess() { return exe_process; }
 
   Player* GetPlayer() { return main_player; }
   std::string GetName();
@@ -39,7 +46,9 @@ class Fuse {
 
   const std::vector<std::unique_ptr<HookInjection>>& GetHooks() const { return hooks; }
 
+  HWND GetGameWindowHandle();
   bool UpdateMemory();
+  GameMemory& GetGameMemory() { return game_memory; }
 
  private:
   Fuse() {}
@@ -59,9 +68,7 @@ class Fuse {
   u16 player_id = 0xFFFF;
 
   ExeProcess exe_process;
-  MemoryAddress module_base_continuum = 0;
-  MemoryAddress module_base_menu = 0;
-  MemoryAddress game_address = 0;
+  GameMemory game_memory;
 
   bool initialized = false;
 };

@@ -77,10 +77,10 @@ HRESULT STDMETHODCALLTYPE OverrideBlt(LPDIRECTDRAWSURFACE surface, LPRECT dest_r
 
 void Fuse::Inject() {
   if (!initialized) {
-    module_base_continuum = exe_process.GetModuleBase("Continuum.exe");
-    module_base_menu = exe_process.GetModuleBase("menu040.dll");
+    game_memory.module_base_continuum = exe_process.GetModuleBase("Continuum.exe");
+    game_memory.module_base_menu = exe_process.GetModuleBase("menu040.dll");
 
-    game_address = exe_process.ReadU32(module_base_continuum + 0xC1AFC);
+    game_memory.game_address = exe_process.ReadU32(game_memory.module_base_continuum + 0xC1AFC);
 
     DetourRestoreAfterWith();
 
@@ -97,8 +97,8 @@ void Fuse::Inject() {
 std::string Fuse::GetName() {
   const size_t ProfileStructSize = 2860;
 
-  uint16_t profile_index = exe_process.ReadU32(module_base_menu + 0x47FA0) & 0xFFFF;
-  MemoryAddress addr = exe_process.ReadU32(module_base_menu + 0x47A38) + 0x15;
+  uint16_t profile_index = exe_process.ReadU32(game_memory.module_base_menu + 0x47FA0) & 0xFFFF;
+  MemoryAddress addr = exe_process.ReadU32(game_memory.module_base_menu + 0x47A38) + 0x15;
 
   if (addr == 0) {
     return "";
@@ -113,22 +113,32 @@ std::string Fuse::GetName() {
   return name;
 }
 
+HWND Fuse::GetGameWindowHandle() {
+  HWND handle = 0;
+
+  if (game_memory.game_address) {
+    handle = *(HWND*)(game_memory.game_address + 0x8C);
+  }
+
+  return handle;
+}
+
 bool Fuse::UpdateMemory() {
-  if (!module_base_continuum) {
-    module_base_continuum = exe_process.GetModuleBase("Continuum.exe");
+  if (!game_memory.module_base_continuum) {
+    game_memory.module_base_continuum = exe_process.GetModuleBase("Continuum.exe");
 
-    if (module_base_continuum == 0) return false;
+    if (game_memory.module_base_continuum == 0) return false;
   }
 
-  if (!module_base_menu) {
-    module_base_menu = exe_process.GetModuleBase("menu040.dll");
+  if (!game_memory.module_base_menu) {
+    game_memory.module_base_menu = exe_process.GetModuleBase("menu040.dll");
 
-    if (module_base_menu == 0) return false;
+    if (game_memory.module_base_menu == 0) return false;
   }
 
-  game_address = exe_process.ReadU32(module_base_continuum + 0xC1AFC);
+  game_memory.game_address = exe_process.ReadU32(game_memory.module_base_continuum + 0xC1AFC);
 
-  if (game_address == 0) {
+  if (game_memory.game_address == 0) {
     main_player = nullptr;
     player_id = 0xFFFF;
     return false;
@@ -194,9 +204,9 @@ void Fuse::ReadPlayers() {
   main_player = nullptr;
   player_id = 0xFFFF;
 
-  if (game_address == 0) return;
+  if (game_memory.game_address == 0) return;
 
-  MemoryAddress base_addr = game_address + 0x127EC;
+  MemoryAddress base_addr = game_memory.game_address + 0x127EC;
   MemoryAddress players_addr = base_addr + 0x884;
   MemoryAddress count_addr = base_addr + 0x1884;
 
@@ -271,10 +281,10 @@ void Fuse::ReadPlayers() {
 void Fuse::ReadWeapons() {
   weapons.clear();
 
-  if (game_address == 0) return;
+  if (game_memory.game_address == 0) return;
 
   // Grab the address to the main player structure
-  MemoryAddress player_addr = *(MemoryAddress*)(game_address + 0x13070);
+  MemoryAddress player_addr = *(MemoryAddress*)(game_memory.game_address + 0x13070);
 
   if (player_addr == 0) return;
 

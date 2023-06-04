@@ -160,6 +160,7 @@
     <ClInclude Include="include\fuse\Platform.h" />
     <ClInclude Include="include\fuse\ExeProcess.h" />
     <ClInclude Include="include\fuse\Player.h" />
+    <ClInclude Include="include\fuse\render\Color.h" />
     <ClInclude Include="include\fuse\render\Renderer.h" />
     <ClInclude Include="include\fuse\render\Text.h" />
     <ClInclude Include="include\fuse\Types.h" />
