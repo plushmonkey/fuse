@@ -123,6 +123,32 @@ class Vector2f {
   }
 };
 
+class Vector2i {
+ public:
+  union {
+    struct {
+      int x;
+      int y;
+    };
+
+    int values[2];
+  };
+
+  Vector2i() : x(0), y(0) {}
+  Vector2i(int x, int y) : x(x), y(y) {}
+  Vector2i(const Vector2i& other) : x(other.x), y(other.y) {}
+
+  Vector2i& operator=(const Vector2i& other) {
+    x = other.x;
+    y = other.y;
+    return *this;
+  }
+
+  bool operator==(const Vector2i& other) const noexcept { return x == other.x && y == other.y; }
+  bool operator!=(const Vector2i& other) const noexcept { return !(*this == other); }
+  int operator[](size_t index) { return values[index]; }
+};
+
 inline float DotProduct(const Vector2f& v1, const Vector2f& v2) noexcept {
   return v1.x * v2.x + v1.y * v2.y;
 }
@@ -137,6 +163,10 @@ inline Vector2f Normalize(const Vector2f& v) {
 
 inline Vector2f Perpendicular(const Vector2f& v) {
   return Vector2f(-v.y, v.x);
+}
+
+inline Vector2f Hadamard(const Vector2f& v1, const Vector2f& v2) noexcept {
+  return Vector2f(v1.x * v2.y, v1.y * v2.y);
 }
 
 inline Vector2f Rotate(const Vector2f& v, float rads) {

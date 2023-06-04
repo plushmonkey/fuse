@@ -153,6 +153,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\fuse\ClientSettings.h" />
     <ClInclude Include="include\fuse\Args.h" />
     <ClInclude Include="include\fuse\Fuse.h" />
     <ClInclude Include="include\fuse\HookInjection.h" />

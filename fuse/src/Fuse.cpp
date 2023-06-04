@@ -94,6 +94,38 @@ void Fuse::Inject() {
   }
 }
 
+const ClientSettings& Fuse::GetSettings() const {
+  static ClientSettings empty_settings = {};
+
+  if (!game_memory.game_address) {
+    return empty_settings;
+  }
+
+  MemoryAddress addr = game_memory.game_address + 0x127EC + 0x1AE70;
+
+  return *reinterpret_cast<ClientSettings*>(addr);
+}
+
+const ShipSettings& Fuse::GetShipSettings() const {
+  auto player = GetPlayer();
+
+  if (player == nullptr) {
+    return GetShipSettings(8);
+  }
+
+  return GetShipSettings(player->ship);
+}
+
+const ShipSettings& Fuse::GetShipSettings(int ship) const {
+  static ShipSettings empty_settings = {};
+
+  if (ship < 0 || ship >= 8) {
+    return empty_settings;
+  }
+
+  return GetSettings().ShipSettings[ship];
+}
+
 std::string Fuse::GetName() {
   const size_t ProfileStructSize = 2860;
 

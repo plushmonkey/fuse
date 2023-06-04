@@ -1,5 +1,6 @@
 #pragma once
 
+#include <fuse/ClientSettings.h>
 #include <fuse/ExeProcess.h>
 #include <fuse/HookInjection.h>
 #include <fuse/Map.h>
@@ -40,8 +41,12 @@ class Fuse {
   Map& GetMap() { return map; }
   render::Renderer& GetRenderer() { return renderer; }
   ExeProcess& GetExeProcess() { return exe_process; }
+  const ClientSettings& GetSettings() const;
+  const ShipSettings& GetShipSettings() const;
+  const ShipSettings& GetShipSettings(int ship) const;
 
   Player* GetPlayer() { return main_player; }
+  const Player* GetPlayer() const { return main_player; }
   std::string GetName();
 
   void RegisterHook(std::unique_ptr<HookInjection> hook) { hooks.push_back(std::move(hook)); }
