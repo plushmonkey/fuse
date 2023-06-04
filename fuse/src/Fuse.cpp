@@ -150,7 +150,15 @@ bool Fuse::UpdateMemory() {
 void Fuse::Update() {
   renderer.Reset();
 
+  map = Map();
+
   if (!UpdateMemory()) return;
+
+  u32* map_addr = (u32*)(*(u32*)(0x4C1AFC) + 0x127ec + 0x1d6d0);
+
+  if (map_addr) {
+    map = Map((u8*)*map_addr);
+  }
 
   if (!renderer.injected) {
     u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;

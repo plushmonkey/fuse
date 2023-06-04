@@ -11,6 +11,7 @@ class HelloWorld final : public HookInjection {
   void OnUpdate() override {
     std::string output = "Hello, world.";
 
+    // Calculate a hue that cycles based on the current tick.
     float hue = ((GetTickCount() % 3000) / 3000.0f) * 360.0f;
     render::Color color = render::Color::FromHSV(hue, 0.8f, 0.6f);
 
@@ -20,7 +21,12 @@ class HelloWorld final : public HookInjection {
       output = std::format("Hello, {} ({}). You are at ({:.2f}, {:.2f}).", player->name, player->id, player->position.x,
                            player->position.y);
 
-      Fuse::Get().GetRenderer().PushWorldLine(player->position, player->position + player->GetHeading() * 3.0f, color);
+      // Check if the player is not in a safe.
+      if (Fuse::Get().GetMap().GetTileId(player->position) != kSafeTileId) {
+        // Render a line showing the direction the player is facing.
+        Fuse::Get().GetRenderer().PushWorldLine(player->position, player->position + player->GetHeading() * 3.0f,
+                                                color);
+      }
     }
 
     Fuse::Get().GetRenderer().PushText(output, Vector2f(300, 300), render::TextColor::Yellow);

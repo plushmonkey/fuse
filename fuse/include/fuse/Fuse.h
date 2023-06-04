@@ -2,6 +2,7 @@
 
 #include <fuse/ExeProcess.h>
 #include <fuse/HookInjection.h>
+#include <fuse/Map.h>
 #include <fuse/Player.h>
 #include <fuse/Weapon.h>
 #include <fuse/render/Renderer.h>
@@ -36,6 +37,7 @@ class Fuse {
   void Inject();
   void Update();
 
+  Map& GetMap() { return map; }
   render::Renderer& GetRenderer() { return renderer; }
   ExeProcess& GetExeProcess() { return exe_process; }
 
@@ -62,6 +64,7 @@ class Fuse {
   std::vector<Weapon> weapons;
 
   render::Renderer renderer;
+  Map map;
 
   ShipStatus ship_status;
   Player* main_player = nullptr;

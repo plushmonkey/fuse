@@ -156,6 +156,7 @@
     <ClInclude Include="include\fuse\Args.h" />
     <ClInclude Include="include\fuse\Fuse.h" />
     <ClInclude Include="include\fuse\HookInjection.h" />
+    <ClInclude Include="include\fuse\Map.h" />
     <ClInclude Include="include\fuse\Math.h" />
     <ClInclude Include="include\fuse\Platform.h" />
     <ClInclude Include="include\fuse\ExeProcess.h" />
@@ -169,6 +170,7 @@
   <ItemGroup>
     <ClCompile Include="src\ExeProcess.cpp" />
     <ClCompile Include="src\Fuse.cpp" />
+    <ClCompile Include="src\Map.cpp" />
     <ClCompile Include="src\render\Renderer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
