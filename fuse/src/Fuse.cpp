@@ -155,6 +155,54 @@ HWND Fuse::GetGameWindowHandle() {
   return handle;
 }
 
+bool Fuse::IsOnMenu() const {
+  if (game_memory.module_base_menu == 0) return true;
+
+  return *(u8*)(game_memory.module_base_menu + 0x47a84) == 0;
+}
+
+ConnectState Fuse::GetConnectState() const {
+  if (IsOnMenu()) return ConnectState::None;
+
+  if (game_memory.game_address == 0) return ConnectState::None;
+
+  ConnectState state = *(ConnectState*)(game_memory.game_address + 0x127EC + 0x588);
+
+  if (state == ConnectState::Playing) {
+    // Check if the client has timed out.
+    u32 ticks_since_recv = *(u32*)(game_memory.game_address + 0x127EC + 0x590);
+
+    // @453420
+    if (ticks_since_recv > 1500) {
+      return ConnectState::Disconnected;
+    }
+  }
+
+  return state;
+}
+
+bool Fuse::IsGameMenuOpen() const {
+  if (game_memory.game_address == 0) return false;
+
+  ConnectState connect_state = GetConnectState();
+
+  if (connect_state == ConnectState::Playing || connect_state == ConnectState::Disconnected) {
+    return *(u8*)(game_memory.game_address + 0x127EC + 0x74D);
+  }
+
+  return false;
+}
+
+void Fuse::SetGameMenuOpen(bool open) {
+  if (game_memory.game_address == 0) return;
+
+  ConnectState connect_state = GetConnectState();
+
+  if (connect_state == ConnectState::Playing || connect_state == ConnectState::Disconnected) {
+    *(u8*)(game_memory.game_address + 0x127EC + 0x74D) = (u8)open;
+  }
+}
+
 bool Fuse::UpdateMemory() {
   if (!game_memory.module_base_continuum) {
     game_memory.module_base_continuum = exe_process.GetModuleBase("Continuum.exe");

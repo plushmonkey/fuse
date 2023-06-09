@@ -23,7 +23,7 @@ bool Map::IsSolid(u16 x, u16 y) const {
 }
 
 TileId Map::GetTileId(u16 x, u16 y) const {
-  if (x >= 1024 || y >= 1024) return 0;
+  if (x >= 1024 || y >= 1024) return 252;
   if (map_data == nullptr) return 0;
 
   return map_data[y * kMapExtent + x];

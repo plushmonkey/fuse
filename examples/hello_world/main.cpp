@@ -17,22 +17,36 @@ class HelloWorld final : public HookInjection {
 
     Player* player = Fuse::Get().GetPlayer();
 
-    if (player && player->ship != 8) {
-      output = std::format("Hello, {} ({}). You are at ({:.2f}, {:.2f}).", player->name, player->id, player->position.x,
-                           player->position.y);
+    ConnectState connect_state = Fuse::Get().GetConnectState();
 
-      // Check if the player is not in a safe.
-      if (Fuse::Get().GetMap().GetTileId(player->position) != kSafeTileId) {
-        // Render a line showing the direction the player is facing.
-        Fuse::Get().GetRenderer().PushWorldLine(player->position, player->position + player->GetHeading() * 3.0f,
-                                                color);
+    if (connect_state == ConnectState::Playing && Fuse::Get().GetMap().IsLoaded()) {
+      if (player && player->ship != 8) {
+        output = std::format("Hello, {} ({}). You are at ({:.2f}, {:.2f}).", player->name, player->id,
+                             player->position.x, player->position.y);
+
+        // Check if the player is not in a safe.
+        if (Fuse::Get().GetMap().GetTileId(player->position) != kSafeTileId) {
+          // Render a line showing the direction the player is facing.
+          Fuse::Get().GetRenderer().PushWorldLine(player->position, player->position + player->GetHeading() * 3.0f,
+                                                  color);
+        }
       }
+    } else {
+      const char* state_str = to_string(connect_state);
+
+      output = std::format("ConnectState: {}", state_str);
     }
 
     Fuse::Get().GetRenderer().PushText(output, Vector2f(300, 300), render::TextColor::Yellow);
 
     float line_length = (float)(output.size() * 8);
     Fuse::Get().GetRenderer().PushScreenLine(Vector2f(300, 312), Vector2f(300 + line_length, 312), color);
+  }
+
+  const char* to_string(ConnectState connect_state) {
+    static const char* kStates[] = {"Menu",         "Connecting", "Connected",   "JoiningZone",
+                                    "JoiningArena", "Playing",    "Disconnected"};
+    return kStates[(size_t)connect_state];
   }
 
   KeyState OnGetAsyncKeyState(int vKey) override { return {}; }

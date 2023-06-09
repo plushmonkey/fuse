@@ -15,6 +15,8 @@ class Map {
   Map() : map_data(nullptr) {}
   Map(u8* ptr) : map_data(ptr) {}
 
+  inline bool IsLoaded() const { return map_data != nullptr; }
+
   bool IsSolid(const Vector2f& position) const;
   TileId GetTileId(const Vector2f& position) const;
 
