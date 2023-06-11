@@ -15,17 +15,17 @@ class MenuController final : public HookInjection {
  public:
   MenuController(u16 profile_index, u16 zone_index) : profile_index(profile_index), zone_index(zone_index) {}
 
-  void OnMenuUpdate(LPMSG lpMsg, HWND hWnd) override {
+  bool OnMenuUpdate(BOOL hasMsg, LPMSG lpMsg, HWND hWnd) override {
     if (module_base_menu == 0) {
       module_base_menu = exe_process.GetModuleBase("menu040.dll");
-      return;
+      return false;
     }
 
     SetProfileIndex(profile_index);
     SetZoneIndex(zone_index);
 
     // If message is just a paint, then replace it with pressing enter button to join zone.
-    if (ShouldJoin() && lpMsg && lpMsg->message == WM_PAINT) {
+    if (ShouldJoin() && hasMsg && lpMsg->message == WM_PAINT) {
       lpMsg->message = WM_KEYDOWN;
       lpMsg->wParam = VK_RETURN;
       lpMsg->lParam = 0;
@@ -34,7 +34,10 @@ class MenuController final : public HookInjection {
       // Not currently implemented because I don't want to deal with accidental join spam and the other modal boxes that
       // can pop up on join.
       attempted_join = true;
+      return true;
     }
+
+    return false;
   }
 
  private:

@@ -89,6 +89,8 @@ class Fuse {
   bool UpdateMemory();
   GameMemory& GetGameMemory() { return game_memory; }
 
+  void HandleWindowsEvent(LPMSG msg, HWND hWnd);
+
  private:
   Fuse() {}
 

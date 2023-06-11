@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fuse/Types.h>
+
 #ifdef UNICODE
 #undef UNICODE
 #endif
@@ -17,3 +19,25 @@
 #ifdef GetMessage
 #undef GetMessage
 #endif
+
+namespace fuse {
+
+enum class MouseButton {
+  Left,
+  Right,
+  Shift,
+  Control,
+  Middle,
+  XButton1,
+  XButton2,
+};
+
+struct MouseButtons {
+  MouseButtons(u32 wParam) : wParam(wParam) {}
+
+  bool IsDown(MouseButton button) { return wParam & (1 << (u32)button); }
+
+  u32 wParam;
+};
+
+}  // namespace fuse

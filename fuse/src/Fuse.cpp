@@ -41,21 +41,69 @@ SHORT WINAPI OverrideGetAsyncKeyState(int vKey) {
 BOOL WINAPI OverridePeekMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax, UINT wRemoveMsg) {
   Fuse::Get().Update();
 
+  bool bypass = false;
+
+  // Run OnPeekMessage for each hook and stop if any try to bypass it.
+  // If they want to bypass it then they are trying to return their own MSG.
+  for (auto& hook : Fuse::Get().GetHooks()) {
+    if (hook->OnPeekMessage(lpMsg, hWnd)) {
+      bypass = true;
+      break;
+    }
+  }
+
   for (auto& hook : Fuse::Get().GetHooks()) {
     hook->OnUpdate();
   }
 
-  return RealPeekMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg);
+  BOOL result = bypass;
+
+  // Only run the real PeekMessage if a hook didn't try to inject their own message.
+  if (!result) {
+    result = RealPeekMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg);
+  }
+
+  if (result) {
+    Fuse::Get().HandleWindowsEvent(lpMsg, hWnd);
+  }
+
+  for (auto& hook : Fuse::Get().GetHooks()) {
+    if (hook->OnPostUpdate(result, lpMsg, hWnd)) {
+      result = TRUE;
+    }
+  }
+
+  return result;
 }
 
 BOOL WINAPI OverrideGetMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax) {
   Fuse::Get().UpdateMemory();
 
-  // Run the real GetMessage so the hook can process the message.
-  BOOL result = RealGetMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax);
+  bool bypass = false;
 
+  // Run OnGetMessage for each hook and stop if any try to bypass it.
+  // If they want to bypass it then they are trying to return their own MSG.
   for (auto& hook : Fuse::Get().GetHooks()) {
-    hook->OnMenuUpdate(lpMsg, hWnd);
+    if (hook->OnGetMessage(lpMsg, hWnd)) {
+      bypass = true;
+      break;
+    }
+  }
+
+  BOOL result = bypass;
+
+  // Only run the real GetMessage if a hook didn't try to inject their own message.
+  if (!result) {
+    result = RealGetMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax);
+  }
+
+  // Always update each OnMenuUpdate hook.
+  if (Fuse::Get().IsOnMenu()) {
+    for (auto& hook : Fuse::Get().GetHooks()) {
+      if (hook->OnMenuUpdate(result, lpMsg, hWnd)) {
+        result = TRUE;
+      }
+    }
   }
 
   return result;
@@ -73,6 +121,69 @@ HRESULT STDMETHODCALLTYPE OverrideBlt(LPDIRECTDRAWSURFACE surface, LPRECT dest_r
   }
 
   return RealBlt(surface, dest_rect, next_surface, src_rect, flags, fx);
+}
+
+static inline Vector2i GetMousePosition(LPARAM lParam) {
+  return Vector2i((s32)LOWORD(lParam), (s32)HIWORD(lParam));
+}
+
+void Fuse::HandleWindowsEvent(LPMSG msg, HWND hWnd) {
+  WPARAM wParam = msg->wParam;
+  LPARAM lParam = msg->lParam;
+
+  switch (msg->message) {
+    case WM_MOUSEMOVE: {
+      Vector2i position = GetMousePosition(lParam);
+
+      for (auto& hook : Fuse::Get().GetHooks()) {
+        hook->OnMouseMove(position, MouseButtons(wParam));
+      }
+    } break;
+    case WM_LBUTTONDOWN: {
+      for (auto& hook : Fuse::Get().GetHooks()) {
+        Vector2i position = GetMousePosition(lParam);
+
+        hook->OnMouseDown(position, MouseButton::Left);
+      }
+    } break;
+    case WM_RBUTTONDOWN: {
+      for (auto& hook : Fuse::Get().GetHooks()) {
+        Vector2i position = GetMousePosition(lParam);
+
+        hook->OnMouseDown(position, MouseButton::Right);
+      }
+    } break;
+    case WM_MBUTTONDOWN: {
+      for (auto& hook : Fuse::Get().GetHooks()) {
+        Vector2i position = GetMousePosition(lParam);
+
+        hook->OnMouseDown(position, MouseButton::Middle);
+      }
+    } break;
+    case WM_LBUTTONUP: {
+      for (auto& hook : Fuse::Get().GetHooks()) {
+        Vector2i position = GetMousePosition(lParam);
+
+        hook->OnMouseUp(position, MouseButton::Left);
+      }
+    } break;
+    case WM_RBUTTONUP: {
+      for (auto& hook : Fuse::Get().GetHooks()) {
+        Vector2i position = GetMousePosition(lParam);
+
+        hook->OnMouseUp(position, MouseButton::Right);
+      }
+    } break;
+    case WM_MBUTTONUP: {
+      for (auto& hook : Fuse::Get().GetHooks()) {
+        Vector2i position = GetMousePosition(lParam);
+
+        hook->OnMouseUp(position, MouseButton::Middle);
+      }
+    } break;
+    default: {
+    } break;
+  }
 }
 
 void Fuse::Inject() {

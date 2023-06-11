@@ -137,6 +137,7 @@ class Vector2i {
   Vector2i() : x(0), y(0) {}
   Vector2i(int x, int y) : x(x), y(y) {}
   Vector2i(const Vector2i& other) : x(other.x), y(other.y) {}
+  Vector2i(const Vector2f& other) : x((int)other.x), y((int)other.y) {}
 
   Vector2i& operator=(const Vector2i& other) {
     x = other.x;
@@ -147,6 +148,8 @@ class Vector2i {
   bool operator==(const Vector2i& other) const noexcept { return x == other.x && y == other.y; }
   bool operator!=(const Vector2i& other) const noexcept { return !(*this == other); }
   int operator[](size_t index) { return values[index]; }
+
+  inline Vector2f ToVector2f() const { return Vector2f((float)x, (float)y); }
 };
 
 inline float DotProduct(const Vector2f& v1, const Vector2f& v2) noexcept {
