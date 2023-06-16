@@ -24,3 +24,9 @@ using u64 = uint64_t;
 using MemoryAddress = u32;
 
 }  // namespace fuse
+
+#ifdef FUSE_BUILDING
+#define FUSE_EXPORT __declspec(dllexport)
+#else
+#define FUSE_EXPORT __declspec(dllimport)
+#endif

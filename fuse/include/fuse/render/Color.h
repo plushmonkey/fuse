@@ -6,7 +6,7 @@
 namespace fuse {
 namespace render {
 
-struct Color {
+struct FUSE_EXPORT Color {
   u32 value = 0;
 
   static inline Color FromRGB(u8 r, u8 g, u8 b) {

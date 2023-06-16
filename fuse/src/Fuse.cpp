@@ -6,6 +6,11 @@
 
 namespace fuse {
 
+Fuse& Fuse::Get() {
+  static Fuse instance;
+  return instance;
+}
+
 static SHORT(WINAPI* RealGetAsyncKeyState)(int vKey) = GetAsyncKeyState;
 static BOOL(WINAPI* RealPeekMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax,
                                       UINT wRemoveMsg) = PeekMessageA;
@@ -396,7 +401,7 @@ void Fuse::Update() {
 
   if (player_id == 0xFFFF) {
     for (auto& player : players) {
-      if (player.name == GetName()) {
+      if (player.GetName() == GetName()) {
         player_id = player.id;
         main_player = &player;
         break;
@@ -456,11 +461,11 @@ void Fuse::ReadPlayers() {
 
     player.status = static_cast<uint8_t>(exe_process.ReadU32(player_addr + kStatusOffset));
 
-    player.name = exe_process.ReadString(player_addr + kNameOffset, 23);
+    player.SetName(exe_process.ReadString(player_addr + kNameOffset, 23));
 
     player.bounty = *(u32*)(player_addr + kBountyOffset1) + *(u32*)(player_addr + kBountyOffset2);
 
-    if (player.name == my_name) {
+    if (player.GetName() == my_name) {
       // Energy calculation @4485FA
       u32 energy1 = exe_process.ReadU32(player_addr + kEnergyOffset1);
       u32 energy2 = exe_process.ReadU32(player_addr + kEnergyOffset2);

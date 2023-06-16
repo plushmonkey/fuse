@@ -7,7 +7,7 @@
 
 namespace fuse {
 
-class Vector2f {
+class FUSE_EXPORT Vector2f {
  public:
   union {
     struct {
@@ -123,7 +123,7 @@ class Vector2f {
   }
 };
 
-class Vector2i {
+class FUSE_EXPORT Vector2i {
  public:
   union {
     struct {

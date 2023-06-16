@@ -13,6 +13,8 @@ constexpr u16 kInvalidIndex = 0xFFFF;
 // If a profile index and zone index are provided, then it will try to automatically join the zone.
 class MenuController final : public HookInjection {
  public:
+  const char* GetHookName() override { return "MenuController"; }
+
   MenuController(u16 profile_index, u16 zone_index) : profile_index(profile_index), zone_index(zone_index) {}
 
   bool OnMenuUpdate(BOOL hasMsg, LPMSG lpMsg, HWND hWnd) override {
@@ -73,8 +75,6 @@ BOOL WINAPI DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID reserved) {
 
       // TODO: Argument parser for setting options in any order
       if (args.size() > 1) {
-        Fuse::Get().Inject();
-
         u16 profile_index = (u16)strtol(args[1].data(), nullptr, 10);
         u16 zone_index = kInvalidIndex;
 

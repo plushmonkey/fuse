@@ -53,43 +53,40 @@ struct GameMemory {
 
 class Fuse {
  public:
-  static Fuse& Get() {
-    static Fuse instance;
-    return instance;
-  }
+  FUSE_EXPORT static Fuse& Get();
 
-  void Inject();
-  void Update();
+  FUSE_EXPORT void Inject();
+  FUSE_EXPORT void Update();
 
-  render::Renderer& GetRenderer() { return renderer; }
-  ExeProcess& GetExeProcess() { return exe_process; }
+  FUSE_EXPORT render::Renderer& GetRenderer() { return renderer; }
+  FUSE_EXPORT ExeProcess& GetExeProcess() { return exe_process; }
 
   // This returns true if the client is on the menu and isn't attempting to connect to a zone.
-  bool IsOnMenu() const;
-  ConnectState GetConnectState() const;
+  FUSE_EXPORT bool IsOnMenu() const;
+  FUSE_EXPORT ConnectState GetConnectState() const;
 
-  bool IsGameMenuOpen() const;
-  void SetGameMenuOpen(bool open);
+  FUSE_EXPORT bool IsGameMenuOpen() const;
+  FUSE_EXPORT void SetGameMenuOpen(bool open);
 
-  Map& GetMap() { return map; }
+  FUSE_EXPORT Map& GetMap() { return map; }
 
-  const ClientSettings& GetSettings() const;
-  const ShipSettings& GetShipSettings() const;
-  const ShipSettings& GetShipSettings(int ship) const;
+  FUSE_EXPORT const ClientSettings& GetSettings() const;
+  FUSE_EXPORT const ShipSettings& GetShipSettings() const;
+  FUSE_EXPORT const ShipSettings& GetShipSettings(int ship) const;
 
-  Player* GetPlayer() { return main_player; }
-  const Player* GetPlayer() const { return main_player; }
-  std::string GetName();
+  FUSE_EXPORT Player* GetPlayer() { return main_player; }
+  FUSE_EXPORT const Player* GetPlayer() const { return main_player; }
+  FUSE_EXPORT std::string GetName();
 
-  void RegisterHook(std::unique_ptr<HookInjection> hook) { hooks.push_back(std::move(hook)); }
+  FUSE_EXPORT void RegisterHook(std::unique_ptr<HookInjection> hook) { hooks.push_back(std::move(hook)); }
 
-  const std::vector<std::unique_ptr<HookInjection>>& GetHooks() const { return hooks; }
+  FUSE_EXPORT const std::vector<std::unique_ptr<HookInjection>>& GetHooks() const { return hooks; }
 
-  HWND GetGameWindowHandle();
-  bool UpdateMemory();
-  GameMemory& GetGameMemory() { return game_memory; }
+  FUSE_EXPORT HWND GetGameWindowHandle();
+  FUSE_EXPORT bool UpdateMemory();
+  FUSE_EXPORT GameMemory& GetGameMemory() { return game_memory; }
 
-  void HandleWindowsEvent(LPMSG msg, HWND hWnd);
+  FUSE_EXPORT void HandleWindowsEvent(LPMSG msg, HWND hWnd);
 
  private:
   Fuse() {}

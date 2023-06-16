@@ -10,7 +10,7 @@
 
 namespace fuse {
 
-class ExeProcess {
+class FUSE_EXPORT ExeProcess {
  public:
   ExeProcess();
   ~ExeProcess();

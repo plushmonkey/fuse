@@ -32,7 +32,7 @@ enum class MouseButton {
   XButton2,
 };
 
-struct MouseButtons {
+struct FUSE_EXPORT MouseButtons {
   MouseButtons(u32 wParam) : wParam(wParam) {}
 
   bool IsDown(MouseButton button) { return wParam & (1 << (u32)button); }

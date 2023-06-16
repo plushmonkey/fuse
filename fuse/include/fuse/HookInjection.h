@@ -10,8 +10,10 @@ struct KeyState {
   bool pressed;
 };
 
-class HookInjection {
+class FUSE_EXPORT HookInjection {
  public:
+  virtual const char* GetHookName() = 0;
+
   // This runs before GetMessage is called. If it returns true then it will bypass GetMessage so a custom message can be
   // returned.
   virtual bool OnGetMessage(LPMSG lpMsg, HWND hWnd) { return false; };

@@ -16,7 +16,7 @@ struct WeaponData {
 };
 static_assert(sizeof(WeaponData) == 2, "WeaponData must be two bytes exactly.");
 
-struct Weapon {
+struct FUSE_EXPORT Weapon {
   u32 _vtable;
 
   u32 x;  // 0x04

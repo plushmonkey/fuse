@@ -64,6 +64,8 @@ struct Painter {
 
 class HelloWorld final : public HookInjection {
  public:
+  const char* GetHookName() override { return "HelloWorld"; }
+
   void OnUpdate() override {
     std::string output = "Hello, world.";
 
@@ -77,7 +79,7 @@ class HelloWorld final : public HookInjection {
 
     if (connect_state == ConnectState::Playing && Fuse::Get().GetMap().IsLoaded()) {
       if (player && player->ship != 8) {
-        output = std::format("Hello, {} ({}). You are at ({:.2f}, {:.2f}).", player->name, player->id,
+        output = std::format("Hello, {} ({}). You are at ({:.2f}, {:.2f}).", player->GetName(), player->id,
                              player->position.x, player->position.y);
 
         // Check if the player is not in a safe.
@@ -139,8 +141,6 @@ class HelloWorld final : public HookInjection {
 BOOL WINAPI DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID reserved) {
   switch (dwReason) {
     case DLL_PROCESS_ATTACH: {
-      Fuse::Get().Inject();
-
       Fuse::Get().RegisterHook(std::make_unique<HelloWorld>());
     } break;
   }

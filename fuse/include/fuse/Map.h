@@ -10,7 +10,7 @@ using TileId = u8;
 constexpr u16 kMapExtent = 1024;
 constexpr TileId kSafeTileId = 171;
 
-class Map {
+class FUSE_EXPORT Map {
  public:
   Map() : map_data(nullptr) {}
   Map(u8* ptr) : map_data(ptr) {}
