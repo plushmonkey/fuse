@@ -10,7 +10,9 @@ static SHORT(WINAPI* RealGetAsyncKeyState)(int vKey) = GetAsyncKeyState;
 static BOOL(WINAPI* RealPeekMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax,
                                       UINT wRemoveMsg) = PeekMessageA;
 static BOOL(WINAPI* RealGetMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax) = GetMessageA;
+
 static HRESULT(STDMETHODCALLTYPE* RealBlt)(LPDIRECTDRAWSURFACE, LPRECT, LPDIRECTDRAWSURFACE, LPRECT, DWORD, LPDDBLTFX);
+static HRESULT(STDMETHODCALLTYPE* RealFlip)(LPDIRECTDRAWSURFACE, DWORD);
 
 SHORT WINAPI OverrideGetAsyncKeyState(int vKey) {
   KeyState final_state = {};
@@ -97,10 +99,15 @@ BOOL WINAPI OverrideGetMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT
     result = RealGetMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax);
   }
 
-  // Always update each OnMenuUpdate hook.
-  if (Fuse::Get().IsOnMenu()) {
-    for (auto& hook : Fuse::Get().GetHooks()) {
+  HWND game_window = Fuse::Get().GetGameWindowHandle();
+
+  for (auto& hook : Fuse::Get().GetHooks()) {
+    if (Fuse::Get().IsOnMenu()) {
       if (hook->OnMenuUpdate(result, lpMsg, hWnd)) {
+        result = TRUE;
+      }
+    } else {
+      if (hook->OnPostUpdate(result, lpMsg, hWnd)) {
         result = TRUE;
       }
     }
@@ -121,6 +128,16 @@ HRESULT STDMETHODCALLTYPE OverrideBlt(LPDIRECTDRAWSURFACE surface, LPRECT dest_r
   }
 
   return RealBlt(surface, dest_rect, next_surface, src_rect, flags, fx);
+}
+
+HRESULT STDMETHODCALLTYPE OverrideFlip(LPDIRECTDRAWSURFACE surface, DWORD flags) {
+  u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;
+  LPDIRECTDRAWSURFACE primary_surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x40);
+  LPDIRECTDRAWSURFACE back_surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x44);
+
+  Fuse::Get().GetRenderer().Render();
+
+  return RealFlip(surface, flags);
 }
 
 static inline Vector2i GetMousePosition(LPARAM lParam) {
@@ -360,11 +377,14 @@ void Fuse::Update() {
         void** vtable = (*(void***)surface);
         RealBlt = (HRESULT(STDMETHODCALLTYPE*)(LPDIRECTDRAWSURFACE surface, LPRECT, LPDIRECTDRAWSURFACE, LPRECT, DWORD,
                                                LPDDBLTFX))vtable[5];
+        RealFlip = (HRESULT(STDMETHODCALLTYPE*)(LPDIRECTDRAWSURFACE surface, DWORD))vtable[11];
+
         DetourRestoreAfterWith();
 
         DetourTransactionBegin();
         DetourUpdateThread(GetCurrentThread());
         DetourAttach(&(PVOID&)RealBlt, OverrideBlt);
+        DetourAttach(&(PVOID&)RealFlip, OverrideFlip);
         DetourTransactionCommit();
         renderer.injected = true;
       }

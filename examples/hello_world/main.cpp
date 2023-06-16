@@ -110,10 +110,29 @@ class HelloWorld final : public HookInjection {
 
   KeyState OnGetAsyncKeyState(int vKey) override { return {}; }
 
+  bool OnPostUpdate(BOOL hasMsg, LPMSG lpMsg, HWND hWnd) override {
+    if (!IsDownloadingMap()) return false;
+
+    if (hasMsg && (lpMsg->message == WM_KEYDOWN || lpMsg->message == WM_KEYUP)) {
+      if (lpMsg->wParam == VK_ESCAPE) {
+        lpMsg->message = WM_NULL;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   void OnMouseUp(const Vector2i& position, MouseButton button) override { painter.OnMouseUp(position, button); }
   void OnMouseMove(const Vector2i& position, MouseButtons buttons) override { painter.OnMouseMove(position, buttons); }
 
  private:
+  inline bool IsDownloadingMap() {
+    ConnectState connect_state = Fuse::Get().GetConnectState();
+
+    return connect_state == ConnectState::Playing && !Fuse::Get().GetMap().IsLoaded();
+  }
+
   Painter painter;
 };
 
