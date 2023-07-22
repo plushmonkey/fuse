@@ -1,6 +1,8 @@
 #include <fuse/Args.h>
 #include <fuse/Fuse.h>
 #include <fuse/HookInjection.h>
+//
+#include <detours.h>
 
 using namespace fuse;
 
@@ -36,6 +38,10 @@ class MenuController final : public HookInjection {
       // Not currently implemented because I don't want to deal with accidental join spam and the other modal boxes that
       // can pop up on join.
       attempted_join = true;
+
+      if (hasMsg) {
+        ShowWindow(lpMsg->hwnd, SW_HIDE);
+      }
       return true;
     }
 

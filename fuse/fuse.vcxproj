@@ -165,6 +165,8 @@
     <ClInclude Include="include\fuse\ExeProcess.h" />
     <ClInclude Include="include\fuse\Player.h" />
     <ClInclude Include="include\fuse\render\Color.h" />
+    <ClInclude Include="include\fuse\render\GDIRenderer.h" />
+    <ClInclude Include="include\fuse\render\Primitive.h" />
     <ClInclude Include="include\fuse\render\Renderer.h" />
     <ClInclude Include="include\fuse\render\Text.h" />
     <ClInclude Include="include\fuse\Types.h" />
@@ -174,7 +176,7 @@
     <ClCompile Include="src\ExeProcess.cpp" />
     <ClCompile Include="src\Fuse.cpp" />
     <ClCompile Include="src\Map.cpp" />
-    <ClCompile Include="src\render\Renderer.cpp" />
+    <ClCompile Include="src\render\GDIRenderer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

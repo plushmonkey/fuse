@@ -37,12 +37,25 @@ enum class ConnectState : u32 {
   Disconnected
 };
 
+struct ShipCapability {
+  u8 stealth : 1;
+  u8 cloak : 1;
+  u8 xradar : 1;
+  u8 antiwarp : 1;
+  u8 multifire : 1;
+  u8 bouncing_bullets : 1;
+  u8 proximity : 1;
+  u8 padding : 1;
+};
+
 struct ShipStatus {
   u32 recharge = 0;
   u32 thrust = 0;
   u32 speed = 0;
   u32 rotation = 0;
   u32 shrapnel = 0;
+
+  ShipCapability capability;
 };
 
 struct GameMemory {
@@ -58,7 +71,9 @@ class Fuse {
   FUSE_EXPORT void Inject();
   FUSE_EXPORT void Update();
 
-  FUSE_EXPORT render::Renderer& GetRenderer() { return renderer; }
+  FUSE_EXPORT render::Renderer& GetRenderer() { return *renderer; }
+  FUSE_EXPORT void SetRenderer(std::unique_ptr<render::Renderer> renderer) { this->renderer = std::move(renderer); }
+
   FUSE_EXPORT ExeProcess& GetExeProcess() { return exe_process; }
 
   // This returns true if the client is on the menu and isn't attempting to connect to a zone.
@@ -67,6 +82,10 @@ class Fuse {
 
   FUSE_EXPORT bool IsGameMenuOpen() const;
   FUSE_EXPORT void SetGameMenuOpen(bool open);
+
+  FUSE_EXPORT std::string GetZoneName() const;
+  FUSE_EXPORT std::string GetArenaName() const;
+  FUSE_EXPORT std::string GetMapName() const;
 
   FUSE_EXPORT Map& GetMap() { return map; }
 
@@ -88,8 +107,10 @@ class Fuse {
 
   FUSE_EXPORT void HandleWindowsEvent(LPMSG msg, HWND hWnd);
 
+  FUSE_EXPORT const ShipStatus& GetShipStatus() const { return ship_status; }
+
  private:
-  Fuse() {}
+  Fuse();
 
   void ReadPlayers();
   void ReadWeapons();
@@ -99,7 +120,8 @@ class Fuse {
   std::vector<Player> players;
   std::vector<Weapon> weapons;
 
-  render::Renderer renderer;
+  std::unique_ptr<render::Renderer> renderer;
+
   Map map;
 
   ShipStatus ship_status;

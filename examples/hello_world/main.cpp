@@ -74,7 +74,6 @@ class HelloWorld final : public HookInjection {
     render::Color color = render::Color::FromHSV(hue, 0.8f, 0.6f);
 
     Player* player = Fuse::Get().GetPlayer();
-
     ConnectState connect_state = Fuse::Get().GetConnectState();
 
     if (connect_state == ConnectState::Playing && Fuse::Get().GetMap().IsLoaded()) {
@@ -88,6 +87,21 @@ class HelloWorld final : public HookInjection {
           Fuse::Get().GetRenderer().PushWorldLine(player->position, player->position + player->GetHeading() * 3.0f,
                                                   color);
         }
+
+        y = 244.0f;
+        RenderDebugText(std::format("Zone: {}", Fuse::Get().GetZoneName()));
+        RenderDebugText(std::format("Arena: {}", Fuse::Get().GetArenaName()));
+        RenderDebugText(std::format("Map: {}", Fuse::Get().GetMapName()));
+
+        auto cap = Fuse::Get().GetShipStatus().capability;
+
+        RenderDebugText(std::format("Can stealth: {}", cap.stealth != 0));
+        RenderDebugText(std::format("Can cloak: {}", cap.cloak != 0));
+        RenderDebugText(std::format("Can antiwarp: {}", cap.antiwarp != 0));
+        RenderDebugText(std::format("Can xradar: {}", cap.xradar != 0));
+        RenderDebugText(std::format("Can multifire: {}", cap.multifire != 0));
+        RenderDebugText(std::format("Can prox: {}", cap.proximity != 0));
+        RenderDebugText(std::format("Can bounce bullets: {}", cap.bouncing_bullets != 0));
       }
 
       painter.Render(color);
@@ -98,10 +112,24 @@ class HelloWorld final : public HookInjection {
       painter.Clear();
     }
 
-    Fuse::Get().GetRenderer().PushText(output, Vector2f(300, 300), render::TextColor::Yellow);
+    Vector2f surface_center = Fuse::Get().GetRenderer().GetSurfaceSize() * 0.5f;
+
+    float text_x = surface_center.x - 400.0f;
+    if (text_x < 0) text_x = 0;
+
+    Fuse::Get().GetRenderer().PushText(output, Vector2f(text_x, 300), render::TextColor::Yellow);
 
     float line_length = (float)(output.size() * 8);
-    Fuse::Get().GetRenderer().PushScreenLine(Vector2f(300, 312), Vector2f(300 + line_length, 312), color);
+    Fuse::Get().GetRenderer().PushScreenLine(Vector2f(text_x, 312), Vector2f(text_x + line_length, 312), color);
+  }
+
+  inline void RenderDebugText(const std::string& text) {
+    Vector2f surface_center = Fuse::Get().GetRenderer().GetSurfaceSize() * 0.5f;
+
+    float text_x = surface_center.x + 100.0f;
+
+    Fuse::Get().GetRenderer().PushText(text, Vector2f(text_x, y), render::TextColor::Pink);
+    y += 12.0f;
   }
 
   const char* to_string(ConnectState connect_state) {
@@ -136,6 +164,7 @@ class HelloWorld final : public HookInjection {
   }
 
   Painter painter;
+  float y = 288.0f;
 };
 
 BOOL WINAPI DllMain(HINSTANCE hInst, DWORD dwReason, LPVOID reserved) {

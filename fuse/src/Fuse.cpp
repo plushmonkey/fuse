@@ -1,10 +1,14 @@
 #include <fuse/Platform.h>
 //
-#include <ddraw.h>
 #include <detours.h>
 #include <fuse/Fuse.h>
+#include <fuse/render/GDIRenderer.h>
 
 namespace fuse {
+
+Fuse::Fuse() {
+  renderer = std::make_unique<render::GDIRenderer>();
+}
 
 Fuse& Fuse::Get() {
   static Fuse instance;
@@ -16,8 +20,19 @@ static BOOL(WINAPI* RealPeekMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin
                                       UINT wRemoveMsg) = PeekMessageA;
 static BOOL(WINAPI* RealGetMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT wMsgFilterMax) = GetMessageA;
 
-static HRESULT(STDMETHODCALLTYPE* RealBlt)(LPDIRECTDRAWSURFACE, LPRECT, LPDIRECTDRAWSURFACE, LPRECT, DWORD, LPDDBLTFX);
-static HRESULT(STDMETHODCALLTYPE* RealFlip)(LPDIRECTDRAWSURFACE, DWORD);
+static int(WINAPI* RealMessageBoxA)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType) = MessageBoxA;
+
+int WINAPI OverrideMessageBoxA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType) {
+  if (strstr(lpText, "Failed to connect") != nullptr) {
+    // Failed to connect MessageBox intercept here
+  }
+
+#if 0
+  return RealMessageBoxA(hWnd, lpText, lpCaption, uType);
+#else
+  return 0;
+#endif
+}
 
 SHORT WINAPI OverrideGetAsyncKeyState(int vKey) {
   KeyState final_state = {};
@@ -121,30 +136,6 @@ BOOL WINAPI OverrideGetMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT
   return result;
 }
 
-HRESULT STDMETHODCALLTYPE OverrideBlt(LPDIRECTDRAWSURFACE surface, LPRECT dest_rect, LPDIRECTDRAWSURFACE next_surface,
-                                      LPRECT src_rect, DWORD flags, LPDDBLTFX fx) {
-  u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;
-  LPDIRECTDRAWSURFACE primary_surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x40);
-  LPDIRECTDRAWSURFACE back_surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x44);
-
-  // Check if flipping. I guess there's a full screen blit instead of flip when running without vsync?
-  if (surface == primary_surface && next_surface == back_surface && fx == 0) {
-    Fuse::Get().GetRenderer().Render();
-  }
-
-  return RealBlt(surface, dest_rect, next_surface, src_rect, flags, fx);
-}
-
-HRESULT STDMETHODCALLTYPE OverrideFlip(LPDIRECTDRAWSURFACE surface, DWORD flags) {
-  u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;
-  LPDIRECTDRAWSURFACE primary_surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x40);
-  LPDIRECTDRAWSURFACE back_surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x44);
-
-  Fuse::Get().GetRenderer().Render();
-
-  return RealFlip(surface, flags);
-}
-
 static inline Vector2i GetMousePosition(LPARAM lParam) {
   return Vector2i((s32)LOWORD(lParam), (s32)HIWORD(lParam));
 }
@@ -222,9 +213,44 @@ void Fuse::Inject() {
     DetourAttach(&(PVOID&)RealGetAsyncKeyState, OverrideGetAsyncKeyState);
     DetourAttach(&(PVOID&)RealPeekMessageA, OverridePeekMessageA);
     DetourAttach(&(PVOID&)RealGetMessageA, OverrideGetMessageA);
+    // DetourAttach(&(PVOID&)RealMessageBoxA, OverrideMessageBoxA);
     DetourTransactionCommit();
     initialized = true;
   }
+}
+
+std::string Fuse::GetZoneName() const {
+  constexpr size_t kZoneStructSize = 0xD8;
+  constexpr size_t kZoneNameOffset = 0x92;
+
+  if (!game_memory.game_address) return "";
+
+  u32 zone_base = *(u32*)(game_memory.module_base_menu + 0x46C58);
+  u32 zone_index = *(u32*)(game_memory.module_base_menu + 0x47F9C);
+
+  char* zone_name = (char*)(zone_base + (kZoneStructSize * zone_index) + kZoneNameOffset);
+
+  return std::string(zone_name);
+}
+
+std::string Fuse::GetArenaName() const {
+  if (!game_memory.game_address) return "";
+
+  char* map_name = (char*)(game_memory.game_address + 0x127ec + 0x1BBA4);
+
+  if (*map_name == 0) {
+    return std::string("(public)");
+  }
+
+  return std::string(map_name);
+}
+
+std::string Fuse::GetMapName() const {
+  if (!game_memory.game_address) return "";
+
+  char* map_name = (char*)((*(u32*)(game_memory.game_address + 0x127ec + 0x6C4)) + 0x01);
+
+  return std::string(map_name);
 }
 
 const ClientSettings& Fuse::GetSettings() const {
@@ -361,8 +387,6 @@ bool Fuse::UpdateMemory() {
 }
 
 void Fuse::Update() {
-  renderer.Reset();
-
   map = Map();
 
   if (!UpdateMemory()) return;
@@ -373,28 +397,7 @@ void Fuse::Update() {
     map = Map((u8*)*map_addr);
   }
 
-  if (!renderer.injected) {
-    u32 graphics_addr = *(u32*)(0x4C1AFC) + 0x30;
-    if (graphics_addr) {
-      LPDIRECTDRAWSURFACE surface = (LPDIRECTDRAWSURFACE) * (u32*)(graphics_addr + 0x44);
-
-      if (surface) {
-        void** vtable = (*(void***)surface);
-        RealBlt = (HRESULT(STDMETHODCALLTYPE*)(LPDIRECTDRAWSURFACE surface, LPRECT, LPDIRECTDRAWSURFACE, LPRECT, DWORD,
-                                               LPDDBLTFX))vtable[5];
-        RealFlip = (HRESULT(STDMETHODCALLTYPE*)(LPDIRECTDRAWSURFACE surface, DWORD))vtable[11];
-
-        DetourRestoreAfterWith();
-
-        DetourTransactionBegin();
-        DetourUpdateThread(GetCurrentThread());
-        DetourAttach(&(PVOID&)RealBlt, OverrideBlt);
-        DetourAttach(&(PVOID&)RealFlip, OverrideFlip);
-        DetourTransactionCommit();
-        renderer.injected = true;
-      }
-    }
-  }
+  renderer->OnNewFrame();
 
   ReadPlayers();
   ReadWeapons();
@@ -481,6 +484,17 @@ void Fuse::ReadPlayers() {
       ship_status.shrapnel = *(u32*)(player_addr + 0x2A8) + *(u32*)(player_addr + 0x2AC);
       ship_status.thrust = *(u32*)(player_addr + 0x244) + *(u32*)(player_addr + 0x248);
       ship_status.speed = *(u32*)(player_addr + 0x350) + *(u32*)(player_addr + 0x354);
+
+      u32 capabilities = *(u32*)(player_addr + 0x2EC);
+      u32 cloak_stealth = *(u32*)(player_addr + 0x2E8);
+
+      ship_status.capability.stealth = (cloak_stealth & (1 << 17)) != 0;
+      ship_status.capability.cloak = (cloak_stealth & (1 << 30)) != 0;
+      ship_status.capability.antiwarp = (capabilities & (1 << 7)) != 0;
+      ship_status.capability.xradar = (capabilities & (1 << 9)) != 0;
+      ship_status.capability.multifire = (capabilities & (1 << 15)) != 0;
+      ship_status.capability.bouncing_bullets = (capabilities & (1 << 19)) != 0;
+      ship_status.capability.proximity = (capabilities & (1 << 26)) != 0;
 
       player_id = player.id;
     } else {
