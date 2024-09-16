@@ -100,6 +100,7 @@ class Fuse {
   FUSE_EXPORT void RegisterHook(std::unique_ptr<HookInjection> hook) { hooks.push_back(std::move(hook)); }
 
   FUSE_EXPORT const std::vector<std::unique_ptr<HookInjection>>& GetHooks() const { return hooks; }
+  FUSE_EXPORT void ClearHooks() { hooks.clear(); }
 
   FUSE_EXPORT HWND GetGameWindowHandle();
   FUSE_EXPORT bool UpdateMemory();
@@ -108,6 +109,9 @@ class Fuse {
   FUSE_EXPORT void HandleWindowsEvent(LPMSG msg, HWND hWnd);
 
   FUSE_EXPORT const ShipStatus& GetShipStatus() const { return ship_status; }
+
+  FUSE_EXPORT const std::vector<Player>& GetPlayers() const { return players; }
+  FUSE_EXPORT const std::vector<Weapon>& GetWeapons() const { return weapons; }
 
  private:
   Fuse();

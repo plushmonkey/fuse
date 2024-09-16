@@ -102,6 +102,8 @@ class HelloWorld final : public HookInjection {
         RenderDebugText(std::format("Can multifire: {}", cap.multifire != 0));
         RenderDebugText(std::format("Can prox: {}", cap.proximity != 0));
         RenderDebugText(std::format("Can bounce bullets: {}", cap.bouncing_bullets != 0));
+
+        RenderDebugText(std::format("Status: {}", player->status));
       }
 
       painter.Render(color);

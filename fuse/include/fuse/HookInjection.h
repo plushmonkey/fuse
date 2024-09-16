@@ -3,6 +3,8 @@
 #include <fuse/Math.h>
 #include <fuse/Platform.h>
 
+#include <string_view>
+
 namespace fuse {
 
 struct KeyState {
@@ -33,8 +35,14 @@ class FUSE_EXPORT HookInjection {
   virtual void OnMouseDown(const Vector2i& position, MouseButton button) {}
   virtual void OnMouseUp(const Vector2i& position, MouseButton button) {}
 
+  virtual void OnQuit() {}
+
   // Return true if the key should be pressed
   virtual KeyState OnGetAsyncKeyState(int vKey) { return {}; }
+
+  // This is a handler that gets called when a messagebox popup happens.
+  // Return true to suppress the actual messagebox popup.
+  virtual bool OnMessageBox(std::string_view text, std::string_view caption, UINT type) { return false; }
 };
 
 }  // namespace fuse

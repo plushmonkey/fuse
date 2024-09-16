@@ -48,6 +48,18 @@ class MenuController final : public HookInjection {
     return false;
   }
 
+  bool OnMessageBox(std::string_view text, std::string_view caption, UINT type) override {
+    // TODO: Handle login popups.
+    // TODO: This can be used for determining timer delays for re-connect.
+    if (text.find("Failed to connect") != std::string::npos) {
+      // Return true here to prevent the messagebox from actually appearing.
+      // This will cause it to go right back to the zone select screen.
+      // return true;
+    }
+
+    return false;
+  }
+
  private:
   bool ShouldJoin() const { return !attempted_join && profile_index != kInvalidIndex && zone_index != kInvalidIndex; }
 

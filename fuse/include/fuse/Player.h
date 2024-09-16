@@ -24,6 +24,9 @@ struct Player {
 
   int32_t bounty;
 
+  u32 respawn_time;
+  u8 ping;
+
   FUSE_EXPORT const std::string& GetName() const { return name; }
   FUSE_EXPORT void SetName(const std::string& name) {
     this->name = name;

@@ -23,15 +23,19 @@ static BOOL(WINAPI* RealGetMessageA)(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin,
 static int(WINAPI* RealMessageBoxA)(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType) = MessageBoxA;
 
 int WINAPI OverrideMessageBoxA(HWND hWnd, LPCSTR lpText, LPCSTR lpCaption, UINT uType) {
-  if (strstr(lpText, "Failed to connect") != nullptr) {
-    // Failed to connect MessageBox intercept here
+  bool suppress = false;
+
+  for (auto& hook : Fuse::Get().GetHooks()) {
+    if (hook->OnMessageBox(lpText, lpCaption, uType)) {
+      suppress = true;
+    }
   }
 
-#if 0
+  if (suppress) {
+    return 0;
+  }
+
   return RealMessageBoxA(hWnd, lpText, lpCaption, uType);
-#else
-  return 0;
-#endif
 }
 
 SHORT WINAPI OverrideGetAsyncKeyState(int vKey) {
@@ -64,6 +68,14 @@ BOOL WINAPI OverridePeekMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UIN
   Fuse::Get().Update();
 
   bool bypass = false;
+
+  if (lpMsg->message == WM_QUIT) {
+    for (auto& hook : Fuse::Get().GetHooks()) {
+      hook->OnQuit();
+    }
+
+    Fuse::Get().ClearHooks();
+  }
 
   // Run OnPeekMessage for each hook and stop if any try to bypass it.
   // If they want to bypass it then they are trying to return their own MSG.
@@ -102,6 +114,14 @@ BOOL WINAPI OverrideGetMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT
   Fuse::Get().UpdateMemory();
 
   bool bypass = false;
+
+  if (lpMsg->message == WM_QUIT) {
+    for (auto& hook : Fuse::Get().GetHooks()) {
+      hook->OnQuit();
+    }
+
+    Fuse::Get().ClearHooks();
+  }
 
   // Run OnGetMessage for each hook and stop if any try to bypass it.
   // If they want to bypass it then they are trying to return their own MSG.
@@ -213,7 +233,7 @@ void Fuse::Inject() {
     DetourAttach(&(PVOID&)RealGetAsyncKeyState, OverrideGetAsyncKeyState);
     DetourAttach(&(PVOID&)RealPeekMessageA, OverridePeekMessageA);
     DetourAttach(&(PVOID&)RealGetMessageA, OverrideGetMessageA);
-    // DetourAttach(&(PVOID&)RealMessageBoxA, OverrideMessageBoxA);
+    DetourAttach(&(PVOID&)RealMessageBoxA, OverrideMessageBoxA);
     DetourTransactionCommit();
     initialized = true;
   }
@@ -467,6 +487,16 @@ void Fuse::ReadPlayers() {
     player.SetName(exe_process.ReadString(player_addr + kNameOffset, 23));
 
     player.bounty = *(u32*)(player_addr + kBountyOffset1) + *(u32*)(player_addr + kBountyOffset2);
+
+    u32 respawn_time = *(u32*)(player_addr + 0x40);  // This is the explode timer.
+
+    if (respawn_time > 0) {
+      respawn_time += GetSettings().EnterDelay;  // Add enter delay to explode timer to get full respawn timer.
+    } else {
+      respawn_time = *(u32*)(player_addr + 0x144);  // Explode is already finished so just use the actual respawn timer.
+    }
+
+    player.respawn_time = respawn_time;
 
     if (player.GetName() == my_name) {
       // Energy calculation @4485FA
