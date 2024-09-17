@@ -355,6 +355,10 @@ ConnectState Fuse::GetConnectState() const {
     if (ticks_since_recv > 1500) {
       return ConnectState::Disconnected;
     }
+
+    if (!GetMap().IsLoaded()) {
+      return ConnectState::Downloading;
+    }
   }
 
   return state;

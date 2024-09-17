@@ -76,7 +76,7 @@ class HelloWorld final : public HookInjection {
     Player* player = Fuse::Get().GetPlayer();
     ConnectState connect_state = Fuse::Get().GetConnectState();
 
-    if (connect_state == ConnectState::Playing && Fuse::Get().GetMap().IsLoaded()) {
+    if (connect_state == ConnectState::Playing) {
       if (player && player->ship != 8) {
         output = std::format("Hello, {} ({}). You are at ({:.2f}, {:.2f}).", player->GetName(), player->id,
                              player->position.x, player->position.y);
@@ -135,8 +135,9 @@ class HelloWorld final : public HookInjection {
   }
 
   const char* to_string(ConnectState connect_state) {
-    static const char* kStates[] = {"Menu",         "Connecting", "Connected",   "JoiningZone",
-                                    "JoiningArena", "Playing",    "Disconnected"};
+    static const char* kStates[] = {"Menu",         "Connecting", "Connected",    "JoiningZone",
+                                    "JoiningArena", "Playing",    "Disconnected", "Downloading"};
+    static_assert(sizeof(kStates) / sizeof(*kStates) == (size_t)ConnectState::Count);
     return kStates[(size_t)connect_state];
   }
 

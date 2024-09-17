@@ -34,7 +34,14 @@ enum class ConnectState : u32 {
   // Normally this only occurs when the server sends the disconnect packet, but Fuse will set it
   // to this if no packet is received within 1500 ticks.
   // This is the same tick count that Continuum uses for the "No data" notification.
-  Disconnected
+  Disconnected,
+  // Any custom states need to be declared below this so the above map to what Continuum has.
+  /////////////////////////////////////
+
+  // The client is on the downloading map/lvz screen.
+  Downloading,
+  // How many different ConnectStates there are.
+  Count
 };
 
 struct ShipCapability {
@@ -88,6 +95,7 @@ class Fuse {
   FUSE_EXPORT std::string GetMapName() const;
 
   FUSE_EXPORT Map& GetMap() { return map; }
+  FUSE_EXPORT const Map& GetMap() const { return map; }
 
   FUSE_EXPORT const ClientSettings& GetSettings() const;
   FUSE_EXPORT const ShipSettings& GetShipSettings() const;
