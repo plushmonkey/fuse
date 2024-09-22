@@ -141,7 +141,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="SettingsWriter.cpp" />
     <ClCompile Include="settings_main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="SettingsWriter.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
