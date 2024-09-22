@@ -40,6 +40,7 @@ HRESULT STDMETHODCALLTYPE OverrideFlip(LPDIRECTDRAWSURFACE surface, DWORD flags)
 void GDIRenderer::OnNewFrame() {
   renderable_texts.clear();
   renderable_lines.clear();
+  renderable_quads.clear();
 
   if (!IsInjected()) {
     Inject();
@@ -60,7 +61,23 @@ void GDIRenderer::Render() {
   HDC hdc;
   back_surface->GetDC(&hdc);
 
-  HGDIOBJ obj = SelectObject(hdc, GetStockObject(DC_PEN));
+  SelectObject(hdc, GetStockObject(DC_PEN));
+  SelectObject(hdc, GetStockObject(DC_BRUSH));
+
+  // Render quads, then lines, then text.
+  // It's rendered in this order for most likely desired ordering.
+
+  for (RenderableQuad& renderable : renderable_quads) {
+    SetDCPenColor(hdc, renderable.color.value);
+    SetDCBrushColor(hdc, renderable.color.value);
+
+    int left = (int)renderable.position.x;
+    int top = (int)renderable.position.y;
+    int right = left + (int)renderable.extent.x;
+    int bottom = top + (int)renderable.extent.y;
+
+    Rectangle(hdc, left, top, right, bottom);
+  }
 
   for (RenderableLine& renderable : renderable_lines) {
     SetDCPenColor(hdc, renderable.color.value);
@@ -82,6 +99,8 @@ void GDIRenderer::Render() {
 
     if (renderable.flags & RenderText_Centered) {
       x -= (u32)((renderable.text.length() / 2.0f) * 8.0f);
+    } else if (renderable.flags & RenderText_AlignRight) {
+      x -= (u32)(renderable.text.length() * 8.0f);
     }
 
     render_text(This, 0, x, y, renderable.text.c_str(), (int)renderable.color, -1, 1);
@@ -101,6 +120,7 @@ void GDIRenderer::PushText(std::string_view text, const Vector2f& position, Text
 
   renderable_texts.push_back(std::move(renderable));
 }
+
 void GDIRenderer::PushWorldLine(const Vector2f& world_from, const Vector2f& world_to, Color color) {
   auto player = Fuse::Get().GetPlayer();
 
@@ -118,6 +138,7 @@ void GDIRenderer::PushWorldLine(const Vector2f& world_from, const Vector2f& worl
 
   PushScreenLine(start, end, color);
 }
+
 void GDIRenderer::PushScreenLine(const Vector2f& screen_from, const Vector2f& screen_to, Color color) {
   // TODO: Check if in screen
   RenderableLine renderable;
@@ -127,6 +148,27 @@ void GDIRenderer::PushScreenLine(const Vector2f& screen_from, const Vector2f& sc
   renderable.color = color;
 
   renderable_lines.push_back(renderable);
+}
+
+void GDIRenderer::PushScreenQuad(const Vector2f& screen_position, const Vector2f& extent, Color color) {
+  // TODO: Check if in screen
+  RenderableQuad renderable;
+
+  renderable.position = screen_position;
+  renderable.extent = extent;
+  renderable.color = color;
+
+  renderable_quads.push_back(renderable);
+}
+
+void GDIRenderer::PushScreenBorder(const Vector2f& position, const Vector2f& extent, Color color, float size) {
+  float total_width = extent.x + size * 2;
+  float total_height = extent.y + size * 2;
+
+  PushScreenQuad(position + Vector2f(-size, -size), Vector2f(total_width, size), color);
+  PushScreenQuad(position + Vector2f(-size, -size), Vector2f(size, total_height), color);
+  PushScreenQuad(position + Vector2f(extent.x, -size), Vector2f(size, total_height), color);
+  PushScreenQuad(position + Vector2f(-size, extent.y), Vector2f(total_width, size), color);
 }
 
 Vector2f GDIRenderer::GetSurfaceSize() const {

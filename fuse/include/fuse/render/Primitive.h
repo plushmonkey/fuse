@@ -12,5 +12,11 @@ struct RenderableLine {
   Color color;
 };
 
+struct RenderableQuad {
+  Vector2f position;
+  Vector2f extent;
+  Color color;
+};
+
 }  // namespace render
 }  // namespace fuse

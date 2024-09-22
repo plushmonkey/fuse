@@ -164,6 +164,10 @@ void Fuse::HandleWindowsEvent(LPMSG msg, HWND hWnd) {
   WPARAM wParam = msg->wParam;
   LPARAM lParam = msg->lParam;
 
+  for (auto& hook : Fuse::Get().GetHooks()) {
+    hook->OnWindowsEvent(*msg, wParam, lParam);
+  }
+
   switch (msg->message) {
     case WM_MOUSEMOVE: {
       Vector2i position = GetMousePosition(lParam);

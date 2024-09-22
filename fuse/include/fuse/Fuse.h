@@ -121,6 +121,8 @@ class Fuse {
   FUSE_EXPORT const std::vector<Player>& GetPlayers() const { return players; }
   FUSE_EXPORT const std::vector<Weapon>& GetWeapons() const { return weapons; }
 
+  FUSE_EXPORT s32 GetCurrentTick() { return (GetTickCount() / 10) & 0x7FFFFFFF; }
+
  private:
   Fuse();
 

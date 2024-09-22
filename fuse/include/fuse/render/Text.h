@@ -12,6 +12,7 @@ enum class TextColor : u16 { White, Green, Blue, Red, Yellow, Fuchsia, DarkRed, 
 
 enum RenderTextFlag {
   RenderText_Centered = (1 << 0),
+  RenderText_AlignRight = (1 << 1),
 };
 
 using RenderTextFlags = u16;

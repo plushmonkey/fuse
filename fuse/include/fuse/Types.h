@@ -30,3 +30,5 @@ using MemoryAddress = u32;
 #else
 #define FUSE_EXPORT __declspec(dllimport)
 #endif
+
+#define FUSE_ARRAY_SIZE(x) sizeof(x) / sizeof(*(x))

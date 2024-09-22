@@ -14,6 +14,9 @@ struct GDIRenderer : public Renderer {
   FUSE_EXPORT void PushWorldLine(const Vector2f& world_from, const Vector2f& world_to, Color color) override;
   FUSE_EXPORT void PushScreenLine(const Vector2f& screen_from, const Vector2f& screen_to, Color color) override;
 
+  FUSE_EXPORT void PushScreenQuad(const Vector2f& screen_position, const Vector2f& extent, Color color) override;
+  FUSE_EXPORT void PushScreenBorder(const Vector2f& position, const Vector2f& extent, Color color, float size) override;
+
   FUSE_EXPORT Vector2f GetSurfaceSize() const override;
 
   FUSE_EXPORT void Inject();
@@ -22,6 +25,7 @@ struct GDIRenderer : public Renderer {
  private:
   std::vector<RenderableText> renderable_texts;
   std::vector<RenderableLine> renderable_lines;
+  std::vector<RenderableQuad> renderable_quads;
   bool injected = false;
 };
 

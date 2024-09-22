@@ -35,6 +35,8 @@ class FUSE_EXPORT HookInjection {
   virtual void OnMouseDown(const Vector2i& position, MouseButton button) {}
   virtual void OnMouseUp(const Vector2i& position, MouseButton button) {}
 
+  virtual void OnWindowsEvent(MSG msg, WPARAM wParam, LPARAM lParam) {}
+
   virtual void OnQuit() {}
 
   // Return true if the key should be pressed
