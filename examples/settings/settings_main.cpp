@@ -159,6 +159,8 @@ struct SettingsWindow : public FilterListener {
 
     filter.listener = this;
     filter.Disable();
+
+    arena_name = Fuse::Get().GetArenaName();
   }
 
   bool OnWindowsEvent(MSG msg, WPARAM wParam, LPARAM lParam) {
@@ -336,15 +338,28 @@ struct SettingsWindow : public FilterListener {
 
   std::optional<Notification> notification;
   std::vector<Setting> settings;
+
+  std::string arena_name;
 };
 
 class SettingsHook final : public HookInjection {
  public:
   const char* GetHookName() override { return "Settings"; }
 
+  inline bool ShouldHide() const {
+    if (!window.open) return false;
+
+    if (Fuse::Get().GetConnectState() != ConnectState::Playing) return true;
+    if (Fuse::Get().GetArenaName() != window.arena_name) return true;
+
+    return false;
+  }
+
   void OnUpdate() override {
-    auto self = Fuse::Get().GetPlayer();
-    if (!self) return;
+    if (ShouldHide()) {
+      window.open = false;
+      return;
+    }
 
     window.Render();
   }
