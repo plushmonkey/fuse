@@ -1,6 +1,7 @@
 #include <fuse/Fuse.h>
 #include <fuse/HookInjection.h>
 
+#include <algorithm>
 #include <optional>
 #include <string>
 #include <vector>
@@ -42,7 +43,107 @@ struct Notification {
   inline bool IsActive() const { return tick_end >= GetCurrentTick(); }
 };
 
-struct SettingsWindow {
+struct FilterListener {
+  virtual void OnFilterChange() = 0;
+};
+
+struct FilterSelector {
+  enum class State { Disabled = 0, Insert, Locked };
+
+  void Render() {
+    if (state == State::Disabled) return;
+
+    render::Color fill_color = render::Color::FromRGB(33, 33, 33);
+    render::Color border_color = render::Color::FromRGB(127, 127, 127);
+
+    constexpr float kSettingsWindowWidth = 500;
+
+    std::string filter_text = "Filter: " + std::string(filter);
+    float extent_width = filter_text.size() * 8.0f + 3.0f;
+
+    Vector2f surface_size = Fuse::Get().GetRenderer().GetSurfaceSize();
+    Vector2f extent = Vector2f(extent_width, 9);
+
+    Vector2f position((surface_size.x / 2) - (kSettingsWindowWidth / 2), 322);
+
+    Fuse::Get().GetRenderer().PushScreenQuad(position, extent, fill_color);
+    Fuse::Get().GetRenderer().PushScreenBorder(position, extent, border_color, 3.0f);
+    Fuse::Get().GetRenderer().PushScreenQuad(position - Vector2f(0, 3), extent - Vector2f(0, 3), fill_color);
+
+    render::TextColor color = state == State::Locked ? render::TextColor::Green : render::TextColor::Blue;
+    Fuse::Get().GetRenderer().PushText(filter_text, Vector2f(position.x + 2, position.y - 3), color);
+  }
+
+  bool OnWindowsEvent(MSG msg, WPARAM wParam, LPARAM lParam) {
+    if (state != State::Insert) return false;
+
+    if (msg.message == WM_KEYDOWN && wParam == VK_RETURN) {
+      state = State::Locked;
+      return true;
+    }
+
+    if (msg.message == WM_KEYDOWN && wParam == VK_BACK && (GetAsyncKeyState(VK_CONTROL) & 0x8000)) {
+      insert_index = 0;
+      filter[insert_index] = 0;
+      if (listener) listener->OnFilterChange();
+      return true;
+    }
+
+    if (msg.message == WM_CHAR) {
+      if (insert_index >= FUSE_ARRAY_SIZE(filter) - 1) return false;
+
+      u8 codepoint = (u8)wParam;
+
+      if ((codepoint >= 'A' && codepoint <= 'Z') || (codepoint >= 'a' && codepoint <= 'z')) {
+        filter[insert_index++] = (u8)wParam;
+        filter[insert_index] = 0;
+
+        if (listener) listener->OnFilterChange();
+      }
+
+      if (codepoint == VK_BACK && insert_index > 0) {
+        --insert_index;
+        filter[insert_index] = 0;
+
+        if (listener) listener->OnFilterChange();
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  void Toggle() {
+    if (state == State::Disabled) {
+      state = State::Insert;
+    } else {
+      state = State::Disabled;
+    }
+
+    bool changed = insert_index != 0;
+
+    insert_index = 0;
+    filter[0] = 0;
+
+    if (changed && listener) listener->OnFilterChange();
+  }
+
+  void Disable() {
+    if (state != State::Disabled) {
+      Toggle();
+    }
+  }
+
+  inline bool IsEnabled() const { return state != State::Disabled; }
+
+  size_t insert_index = 0;
+  char filter[32] = {};
+  State state = State::Disabled;
+  FilterListener* listener = nullptr;
+};
+
+struct SettingsWindow : public FilterListener {
   void Toggle() {
     open = !open;
 
@@ -53,6 +154,62 @@ struct SettingsWindow {
     notification = {};
 
     PopulateSettings();
+
+    filter.listener = this;
+    filter.Disable();
+  }
+
+  bool OnWindowsEvent(MSG msg, WPARAM wParam, LPARAM lParam) {
+    if (filter.OnWindowsEvent(msg, wParam, lParam)) {
+      return true;
+    }
+
+    if (msg.message != WM_KEYDOWN) return false;
+
+    switch (wParam) {
+      case VK_OEM_5: {
+        filter.Toggle();
+        return true;
+      } break;
+      case VK_ESCAPE: {
+        Toggle();
+        return true;
+      } break;
+      case VK_NEXT: {
+        if (GetAsyncKeyState(VK_SHIFT)) {
+          selected_index += item_view_count;
+        } else {
+          ++selected_index;
+        }
+
+        if (selected_index >= settings.size()) {
+          selected_index = settings.size() - 1;
+        }
+
+        return true;
+      } break;
+      case VK_PRIOR: {
+        if (GetAsyncKeyState(VK_SHIFT)) {
+          selected_index -= item_view_count;
+        } else {
+          --selected_index;
+        }
+
+        if (selected_index >= settings.size()) {
+          selected_index = 0;
+        }
+
+        return true;
+      } break;
+      case VK_END: {
+        Save();
+        return true;
+      } break;
+      default: {
+      } break;
+    }
+
+    return false;
   }
 
   void Render() {
@@ -78,9 +235,10 @@ struct SettingsWindow {
       notification = {};
 
       std::string filename = Fuse::Get().GetArenaName() + ".conf";
-      std::string save_message = "Save to " + filename + ": End";
+      std::string save_message = "Save " + filename + ": End";
 
-      Fuse::Get().GetRenderer().PushText("Move: PgUp/PgDown", Vector2f(text_x, text_y), render::TextColor::Green);
+      Fuse::Get().GetRenderer().PushText("Move: PgUp/PgDn Filter: \\", Vector2f(text_x, text_y),
+                                         render::TextColor::Green);
       Fuse::Get().GetRenderer().PushText(save_message, Vector2f(text_x + extent.x - 1, text_y),
                                          render::TextColor::Green, render::RenderText_AlignRight);
     }
@@ -113,6 +271,8 @@ struct SettingsWindow {
 
       text_y += 12.0f;
     }
+
+    filter.Render();
   }
 
   void PopulateSettings() {
@@ -121,6 +281,29 @@ struct SettingsWindow {
     MemorySettingsWriter writer(settings);
 
     writer.Write(Fuse::Get().GetSettings());
+  }
+
+  void OnFilterChange() override {
+    selected_index = 0;
+    view_index = 0;
+
+    PopulateSettings();
+
+    if (filter.insert_index == 0) return;
+
+    settings.erase(std::remove_if(settings.begin(), settings.end(),
+                                  [&](const Setting& setting) {
+                                    std::string lower_category = setting.category;
+                                    std::string lower_name = setting.name;
+
+                                    std::transform(lower_category.begin(), lower_category.end(), lower_category.begin(),
+                                                   ::tolower);
+                                    std::transform(lower_name.begin(), lower_name.end(), lower_name.begin(), ::tolower);
+
+                                    return lower_category.find(filter.filter) == std::string::npos &&
+                                           lower_name.find(filter.filter) == std::string::npos;
+                                  }),
+                   settings.end());
   }
 
   void Save() {
@@ -147,8 +330,9 @@ struct SettingsWindow {
   size_t view_index = 0;
   size_t item_view_count = 25;
 
-  std::optional<Notification> notification;
+  FilterSelector filter;
 
+  std::optional<Notification> notification;
   std::vector<Setting> settings;
 };
 
@@ -170,52 +354,18 @@ class SettingsHook final : public HookInjection {
       case WM_KEYDOWN: {
         if (wParam == VK_F12 && Fuse::Get().IsGameMenuOpen()) {
           window.Toggle();
+          Fuse::Get().SetGameMenuOpen(false);
+          return true;
         }
-
-        if (window.open) {
-          switch (wParam) {
-            case VK_ESCAPE: {
-              window.Toggle();
-              return true;
-            } break;
-            case VK_NEXT: {
-              if (GetAsyncKeyState(VK_SHIFT)) {
-                window.selected_index += window.item_view_count;
-              } else {
-                ++window.selected_index;
-              }
-
-              if (window.selected_index >= window.settings.size()) {
-                window.selected_index = window.settings.size() - 1;
-              }
-
-              return true;
-            } break;
-            case VK_PRIOR: {
-              if (GetAsyncKeyState(VK_SHIFT)) {
-                window.selected_index -= window.item_view_count;
-              } else {
-                --window.selected_index;
-              }
-
-              if (window.selected_index >= window.settings.size()) {
-                window.selected_index = 0;
-              }
-
-              return true;
-            } break;
-            case VK_END: {
-              window.Save();
-              return true;
-            } break;
-            default: {
-            } break;
-          }
-        }
-
       } break;
       default: {
       } break;
+    }
+
+    if (window.open) {
+      if (window.OnWindowsEvent(msg, wParam, lParam)) {
+        return true;
+      }
     }
 
     return false;

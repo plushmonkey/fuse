@@ -18,6 +18,7 @@ In addition to the loader, there is a library provided for hooking into the game
 Use the hello_world project as an example of using the library.
 
 ## Examples
+
 #### hello_world
 A very simple example of injecting into the main update loop and rendering some text.
 
@@ -26,3 +27,12 @@ Overrides the mutex checks so multiple Continuum clients can be launched at once
 
 #### menu_controller
 Sets the active profile index while on the menu screen. It gets this index from launching Continuum with an index argument.
+
+#### bounds
+Renders bounding boxes around players based on their ball radius.
+
+#### settings
+Adds a settings viewer overlay that is accessed by pressing F12 while the menu is open.  
+It can be controlled with page up / page down. Hold shift to move by page.  
+Press \ to enter filter input mode. Press enter to lock it in so character input is released back to Continuum.  
+Press the end key to save the settings to a file in the standard server format.  
