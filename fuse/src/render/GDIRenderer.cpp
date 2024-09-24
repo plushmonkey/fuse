@@ -22,6 +22,46 @@ HRESULT STDMETHODCALLTYPE OverrideBlt(LPDIRECTDRAWSURFACE surface, LPRECT dest_r
   // Check if flipping. I guess there's a full screen blit instead of flip when running without vsync?
   if (surface == primary_surface && next_surface == back_surface && fx == 0) {
     Fuse::Get().GetRenderer().Render();
+  } else {
+#if 0
+    CallAddress caller = Fuse::Get().GetCallAddress();
+
+    // The text texture might be an optimization for turning many text draw calls into one saved texture.
+    // if (caller.address == 0x404d83) return S_OK; // Render text texture
+    // if (caller.address == 0x4059e2) return S_OK; // Render text texture
+    // if (caller.address == 0x405797) return S_OK; // Clear text texture
+
+    // if (caller.address == 0x404c04) return S_OK; // Render sprite/tile
+    // if (caller.address == 0x404cc8) return S_OK; // Clipped screen edge sprite/tile
+    // if (caller.address == 0x40565e) return S_OK; // Clear background
+    
+    // if (caller.address == 0x405cdd) return S_OK; // Horizontal window border
+    // if (caller.address == 0x405e20) return S_OK; // Vertical window border
+
+    // if (caller.address == 0x402467) return S_OK; // Energy bar
+
+    if (caller.address == 0x404c04 || caller.address == 0x404cc8) {
+      struct ContinuumTexture {
+        u32 vtable;
+        u32 unknown1;
+        u32 surface_ptr;
+        u32 unknown2;
+        u32 unknown3;
+        u32 unknown4;
+        u32 unknown5;
+        u32 unknown6;
+        u32 unknown7;
+        u32 width;
+        u32 height;
+        char name[544];
+      };
+
+      ContinuumTexture* map_texture = *(ContinuumTexture**)(*(u32*)(0x4c1afc) + 0x281C);
+
+      // Filter out tile rendering
+      if (map_texture->surface_ptr == (u32)next_surface) return S_OK;
+    }
+#endif
   }
 
   return RealBlt(surface, dest_rect, next_surface, src_rect, flags, fx);
@@ -127,7 +167,8 @@ void GDIRenderer::PushWorldLine(const Vector2f& world_from, const Vector2f& worl
   if (!player) return;
 
   Vector2f surface_center = GetSurfaceSize() * 0.5f;
-  Vector2f world_center_position = player->position;
+  s32* camera = (s32*)(Fuse::Get().GetGameMemory().game_address + 0x27f8);
+  Vector2f world_center_position(camera[0] / 16.0f, camera[1] / 16.0f);
 
   Vector2f diff = world_to - world_from;
   Vector2f from = (world_from - world_center_position) * 16.0f;

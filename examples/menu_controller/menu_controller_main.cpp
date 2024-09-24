@@ -28,6 +28,13 @@ class MenuController final : public HookInjection {
     SetProfileIndex(profile_index);
     SetZoneIndex(zone_index);
 
+#if 0
+    if (ShouldJoin()) {
+      PostMessage(hWnd, WM_KEYDOWN, VK_RETURN, 0);
+      attempted_join = true;
+    }
+#endif
+
     // If message is just a paint, then replace it with pressing enter button to join zone.
     if (ShouldJoin() && hasMsg && lpMsg->message == WM_PAINT) {
       lpMsg->message = WM_KEYDOWN;

@@ -68,6 +68,32 @@ MemoryAddress ExeProcess::GetModuleBase(const char* module_name) {
   return module_base;
 }
 
+u32 ExeProcess::GetModuleSize(const char* module_name) {
+  HANDLE hSnapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE | TH32CS_SNAPMODULE32, process_id_);
+  MODULEENTRY32 me = {0};
+
+  me.dwSize = sizeof(me);
+
+  if (hSnapshot == INVALID_HANDLE_VALUE) {
+    return 0;
+  }
+
+  u32 module_size = 0;
+
+  BOOL bModule = Module32First(hSnapshot, &me);
+  while (bModule) {
+    if (strcmp(module_name, me.szModule) == 0) {
+      module_size = me.modBaseSize;
+      break;
+    }
+
+    bModule = Module32Next(hSnapshot, &me);
+  }
+
+  CloseHandle(hSnapshot);
+  return module_size;
+}
+
 HANDLE ExeProcess::GetHandle() {
   return process_handle_;
 }

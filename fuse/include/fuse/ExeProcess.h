@@ -25,6 +25,7 @@ class FUSE_EXPORT ExeProcess {
   bool WriteU32(MemoryAddress address, uint32_t value);
 
   MemoryAddress GetModuleBase(const char* module_name);
+  u32 GetModuleSize(const char* module_name);
 
   HANDLE GetHandle();
   DWORD GetId();

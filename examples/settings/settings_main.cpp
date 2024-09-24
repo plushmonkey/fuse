@@ -38,6 +38,7 @@ struct SettingsWindow {
 
     selected_index = 0;
     view_index = 0;
+    notification.clear();
 
     PopulateSettings();
   }
@@ -59,12 +60,17 @@ struct SettingsWindow {
     text_x = position.x + 1;
     text_y = position.y + 2;
 
-    std::string filename = Fuse::Get().GetArenaName() + ".conf";
-    std::string save_message = "Save to " + filename + ": End";
+    if (!notification.empty()) {
+      Fuse::Get().GetRenderer().PushText(notification, Vector2f(text_x, text_y), notification_color);
+    } else {
+      std::string filename = Fuse::Get().GetArenaName() + ".conf";
+      std::string save_message = "Save to " + filename + ": End";
 
-    Fuse::Get().GetRenderer().PushText("Move: PgUp/PgDown", Vector2f(text_x, text_y), render::TextColor::Green);
-    Fuse::Get().GetRenderer().PushText(save_message, Vector2f(text_x + extent.x, text_y), render::TextColor::Green,
-                                       render::RenderText_AlignRight);
+      Fuse::Get().GetRenderer().PushText("Move: PgUp/PgDown", Vector2f(text_x, text_y), render::TextColor::Green);
+      Fuse::Get().GetRenderer().PushText(save_message, Vector2f(text_x + extent.x - 1, text_y),
+                                         render::TextColor::Green, render::RenderText_AlignRight);
+    }
+
     text_y += 12;
 
     item_view_count = (size_t)((extent.y - 12) / 12);
@@ -109,7 +115,11 @@ struct SettingsWindow {
     FileSettingsWriter writer(arena_name + ".conf");
 
     if (writer.Write(Fuse::Get().GetSettings())) {
-      Toggle();
+      notification_color = render::TextColor::Green;
+      notification = "Successfully exported config to " + arena_name + ".conf";
+    } else {
+      notification_color = render::TextColor::DarkRed;
+      notification = "Failed to export config to " + arena_name + ".conf";
     }
   }
 
@@ -123,6 +133,9 @@ struct SettingsWindow {
   size_t selected_index = 0;
   size_t view_index = 0;
   size_t item_view_count = 25;
+
+  std::string notification;
+  render::TextColor notification_color;
 
   std::vector<Setting> settings;
 };
@@ -140,7 +153,7 @@ class SettingsHook final : public HookInjection {
 
   KeyState OnGetAsyncKeyState(int vKey) override { return {}; }
 
-  void OnWindowsEvent(MSG msg, WPARAM wParam, LPARAM lParam) override {
+  bool OnWindowsEvent(MSG msg, WPARAM wParam, LPARAM lParam) override {
     switch (msg.message) {
       case WM_KEYDOWN: {
         if (wParam == VK_F12 && Fuse::Get().IsGameMenuOpen()) {
@@ -151,8 +164,7 @@ class SettingsHook final : public HookInjection {
           switch (wParam) {
             case VK_ESCAPE: {
               window.Toggle();
-              // Set game menu open so it closes when Continuum handles the escape key.
-              Fuse::Get().SetGameMenuOpen(true);
+              return true;
             } break;
             case VK_NEXT: {
               if (GetAsyncKeyState(VK_SHIFT)) {
@@ -164,6 +176,8 @@ class SettingsHook final : public HookInjection {
               if (window.selected_index >= window.settings.size()) {
                 window.selected_index = window.settings.size() - 1;
               }
+
+              return true;
             } break;
             case VK_PRIOR: {
               if (GetAsyncKeyState(VK_SHIFT)) {
@@ -175,9 +189,12 @@ class SettingsHook final : public HookInjection {
               if (window.selected_index >= window.settings.size()) {
                 window.selected_index = 0;
               }
+
+              return true;
             } break;
             case VK_END: {
               window.Save();
+              return true;
             } break;
             default: {
             } break;
@@ -185,7 +202,11 @@ class SettingsHook final : public HookInjection {
         }
 
       } break;
+      default: {
+      } break;
     }
+
+    return false;
   }
 
   SettingsWindow window;

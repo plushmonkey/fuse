@@ -35,7 +35,8 @@ class FUSE_EXPORT HookInjection {
   virtual void OnMouseDown(const Vector2i& position, MouseButton button) {}
   virtual void OnMouseUp(const Vector2i& position, MouseButton button) {}
 
-  virtual void OnWindowsEvent(MSG msg, WPARAM wParam, LPARAM lParam) {}
+  // Return true to swallow the message.
+  virtual bool OnWindowsEvent(MSG msg, WPARAM wParam, LPARAM lParam) { return false; }
 
   virtual void OnQuit() {}
 

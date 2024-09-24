@@ -94,11 +94,22 @@ BOOL WINAPI OverridePeekMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UIN
 
   // Only run the real PeekMessage if a hook didn't try to inject their own message.
   if (!result) {
+    // Continuum seems to have an odd update loop. Usual game loops just use PeekMessage with remove set, but Continuum
+    // runs it with false. When it finds a message in the queue, it runs GetMessage to ensure it doesn't block. This
+    // means we need to handle things in a non-standard way by filtering out the messages we don't want to process by
+    // calling it again with wRemoveMsg set to true.
     result = RealPeekMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg);
   }
 
   if (result) {
     Fuse::Get().HandleWindowsEvent(lpMsg, hWnd);
+
+    if (lpMsg->message == WM_NULL) {
+      // Filter out this message since we don't actually want Continuum to process it.
+      RealPeekMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, TRUE);
+      // Tell Continuum we didn't have a message.
+      return false;
+    }
   }
 
   for (auto& hook : Fuse::Get().GetHooks()) {
@@ -139,8 +150,6 @@ BOOL WINAPI OverrideGetMessageA(LPMSG lpMsg, HWND hWnd, UINT wMsgFilterMin, UINT
     result = RealGetMessageA(lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax);
   }
 
-  HWND game_window = Fuse::Get().GetGameWindowHandle();
-
   for (auto& hook : Fuse::Get().GetHooks()) {
     if (Fuse::Get().IsOnMenu()) {
       if (hook->OnMenuUpdate(result, lpMsg, hWnd)) {
@@ -165,7 +174,11 @@ void Fuse::HandleWindowsEvent(LPMSG msg, HWND hWnd) {
   LPARAM lParam = msg->lParam;
 
   for (auto& hook : Fuse::Get().GetHooks()) {
-    hook->OnWindowsEvent(*msg, wParam, lParam);
+    if (hook->OnWindowsEvent(*msg, wParam, lParam)) {
+      // Swallow the message so Continuum doesn't handle it.
+      // This is used for filtering out keypresses that hooks might be handling.
+      msg->message = WM_NULL;
+    }
   }
 
   switch (msg->message) {
@@ -226,6 +239,7 @@ void Fuse::HandleWindowsEvent(LPMSG msg, HWND hWnd) {
 void Fuse::Inject() {
   if (!initialized) {
     game_memory.module_base_continuum = exe_process.GetModuleBase("Continuum.exe");
+    game_memory.module_size_continuum = exe_process.GetModuleSize("Continuum.exe");
     game_memory.module_base_menu = exe_process.GetModuleBase("menu040.dll");
 
     game_memory.game_address = exe_process.ReadU32(game_memory.module_base_continuum + 0xC1AFC);
@@ -395,6 +409,8 @@ bool Fuse::UpdateMemory() {
     game_memory.module_base_continuum = exe_process.GetModuleBase("Continuum.exe");
 
     if (game_memory.module_base_continuum == 0) return false;
+
+    game_memory.module_size_continuum = exe_process.GetModuleSize("Continuum.exe");
   }
 
   if (!game_memory.module_base_menu) {
@@ -579,6 +595,29 @@ void Fuse::ReadWeapons() {
 
     weapons.emplace_back(weapon);
   }
+}
+
+CallAddress Fuse::GetCallAddress(u32 skip) {
+  if (!game_memory.module_base_continuum) return {};
+
+  u32 module_end = game_memory.module_base_continuum + game_memory.module_size_continuum;
+
+  void* frames[32];
+  WORD frame_count = RtlCaptureStackBackTrace(skip, FUSE_ARRAY_SIZE(frames), frames, 0);
+
+  for (u32 i = 0; i < frame_count; ++i) {
+    MemoryAddress current = (MemoryAddress)frames[i];
+    if (current >= game_memory.module_base_continuum && current < module_end) {
+      CallAddress result = {};
+
+      result.address = current;
+      result.frame_index = i;
+
+      return result;
+    }
+  }
+
+  return {};
 }
 
 }  // namespace fuse

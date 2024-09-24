@@ -69,6 +69,12 @@ struct GameMemory {
   MemoryAddress module_base_continuum = 0;
   MemoryAddress module_base_menu = 0;
   MemoryAddress game_address = 0;
+  MemoryAddress module_size_continuum = 0;
+};
+
+struct CallAddress {
+  MemoryAddress address = 0;
+  u32 frame_index = 0;
 };
 
 class Fuse {
@@ -122,6 +128,11 @@ class Fuse {
   FUSE_EXPORT const std::vector<Weapon>& GetWeapons() const { return weapons; }
 
   FUSE_EXPORT s32 GetCurrentTick() { return (GetTickCount() / 10) & 0x7FFFFFFF; }
+
+  // Looks back through the stack to find a calling address that maps into Continuum's memory space.
+  // This address will be the next instruction to be executed in Continuum's memory space.
+  // Skip is how many frames back that should be skipped. This is useful for finding a specific caller up the stack.
+  FUSE_EXPORT CallAddress GetCallAddress(u32 skip = 0);
 
  private:
   Fuse();

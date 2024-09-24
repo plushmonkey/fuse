@@ -2,13 +2,12 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include <Windows.h>
+#include <fuse/Fuse.h>
 
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include <fuse/Fuse.h>
 
 std::ofstream debug_log;
 
