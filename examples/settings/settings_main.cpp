@@ -95,7 +95,9 @@ struct FilterSelector {
       u8 codepoint = (u8)wParam;
 
       if ((codepoint >= 'A' && codepoint <= 'Z') || (codepoint >= 'a' && codepoint <= 'z')) {
-        filter[insert_index++] = (u8)wParam;
+        if (codepoint <= 'Z') codepoint += 0x20;  // Always use lowercase in filter.
+
+        filter[insert_index++] = codepoint;
         filter[insert_index] = 0;
 
         if (listener) listener->OnFilterChange();
