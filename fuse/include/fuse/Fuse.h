@@ -1,6 +1,7 @@
 #pragma once
 
 #include <fuse/ClientSettings.h>
+#include <fuse/Clock.h>
 #include <fuse/ExeProcess.h>
 #include <fuse/HookInjection.h>
 #include <fuse/Map.h>
@@ -127,7 +128,7 @@ class Fuse {
   FUSE_EXPORT const std::vector<Player>& GetPlayers() const { return players; }
   FUSE_EXPORT const std::vector<Weapon>& GetWeapons() const { return weapons; }
 
-  FUSE_EXPORT s32 GetCurrentTick() { return (GetTickCount() / 10) & 0x7FFFFFFF; }
+
 
   // Looks back through the stack to find a calling address that maps into Continuum's memory space.
   // This address will be the next instruction to be executed in Continuum's memory space.

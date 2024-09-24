@@ -1,6 +1,7 @@
 #include <fuse/Fuse.h>
 #include <fuse/HookInjection.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -30,6 +31,17 @@ struct MemorySettingsWriter : public SettingsWriter {
   std::vector<Setting>& output;
 };
 
+struct Notification {
+  std::string message;
+  render::TextColor color;
+  Tick tick_end = 0;
+
+  Notification(std::string_view msg, render::TextColor color, u32 duration)
+      : message(msg), color(color), tick_end(duration + GetCurrentTick()) {}
+
+  inline bool IsActive() const { return tick_end >= GetCurrentTick(); }
+};
+
 struct SettingsWindow {
   void Toggle() {
     open = !open;
@@ -38,7 +50,7 @@ struct SettingsWindow {
 
     selected_index = 0;
     view_index = 0;
-    notification.clear();
+    notification = {};
 
     PopulateSettings();
   }
@@ -60,9 +72,11 @@ struct SettingsWindow {
     text_x = position.x + 1;
     text_y = position.y + 2;
 
-    if (!notification.empty()) {
-      Fuse::Get().GetRenderer().PushText(notification, Vector2f(text_x, text_y), notification_color);
+    if (notification && notification->IsActive()) {
+      Fuse::Get().GetRenderer().PushText(notification->message, Vector2f(text_x, text_y), notification->color);
     } else {
+      notification = {};
+
       std::string filename = Fuse::Get().GetArenaName() + ".conf";
       std::string save_message = "Save to " + filename + ": End";
 
@@ -115,11 +129,10 @@ struct SettingsWindow {
     FileSettingsWriter writer(arena_name + ".conf");
 
     if (writer.Write(Fuse::Get().GetSettings())) {
-      notification_color = render::TextColor::Green;
-      notification = "Successfully exported config to " + arena_name + ".conf";
+      notification =
+          Notification("Successfully exported config to " + arena_name + ".conf", render::TextColor::Green, 500);
     } else {
-      notification_color = render::TextColor::DarkRed;
-      notification = "Failed to export config to " + arena_name + ".conf";
+      notification = Notification("Failed to export config to " + arena_name + ".conf", render::TextColor::Red, 500);
     }
   }
 
@@ -134,8 +147,7 @@ struct SettingsWindow {
   size_t view_index = 0;
   size_t item_view_count = 25;
 
-  std::string notification;
-  render::TextColor notification_color;
+  std::optional<Notification> notification;
 
   std::vector<Setting> settings;
 };
