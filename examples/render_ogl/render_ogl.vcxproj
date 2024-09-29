@@ -75,7 +75,7 @@
     <LibraryPath>../../Debug;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>../../lib/detours/include;../../fuse/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>lib/glad/include;../../lib/detours/include;../../fuse/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>../../lib/detours/lib.X86;../../Release;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -103,13 +103,14 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>detours.lib;fuse.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>opengl32.lib;detours.lib;fuse.lib;$(CoreLibraryDependencies);%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -144,12 +145,16 @@
     <ClCompile Include="IDirectDraw.cpp" />
     <ClCompile Include="IDirectDrawPalette.cpp" />
     <ClCompile Include="IDirectDrawSurface.cpp" />
+    <ClCompile Include="lib\glad\src\gl.c" />
+    <ClCompile Include="lib\glad\src\wgl.c" />
+    <ClCompile Include="OglRenderer.cpp" />
     <ClCompile Include="render_ogl_main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IDirectDraw.h" />
     <ClInclude Include="IDirectDrawPalette.h" />
     <ClInclude Include="IDirectDrawSurface.h" />
+    <ClInclude Include="OglRenderer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

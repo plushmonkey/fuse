@@ -1,5 +1,7 @@
 #pragma once
 
+#include "OglRenderer.h"
+
 #ifndef CINTERFACE
 #define CINTERFACE
 #define FUSE_MANUAL_CINTERFACE
@@ -57,6 +59,8 @@ struct OglDirectDraw {
 
   ULONG ref;
   GUID guid;
+
+  OglRenderer renderer;
 };
 
 IDirectDraw* __stdcall OglDirectDrawCreate();

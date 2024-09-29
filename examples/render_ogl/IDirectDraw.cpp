@@ -151,6 +151,7 @@ HRESULT __stdcall Ogl_CreateSurface(OglDirectDraw* This, LPDDSURFACEDESC2 desc, 
     if (caps & DDSCAPS_PRIMARYSURFACE) {
       // DisplayMessage(std::format("Creating primary surface."));
       *surface = OglDirectDrawCreateSurface(desc);
+      This->renderer.CreateContext();
       return *surface ? S_OK : S_FALSE;
     } else {
       // DisplayMessage(std::format("Unknown caps: {}", desc->ddsCaps.dwCaps));
