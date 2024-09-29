@@ -238,6 +238,7 @@ void GDIRenderer::Inject() {
                                              LPDDBLTFX))vtable[5];
       RealFlip = (HRESULT(STDMETHODCALLTYPE*)(LPDIRECTDRAWSURFACE surface, DWORD))vtable[11];
 
+#if 0
       DetourRestoreAfterWith();
 
       DetourTransactionBegin();
@@ -246,6 +247,7 @@ void GDIRenderer::Inject() {
       DetourAttach(&(PVOID&)RealFlip, OverrideFlip);
       DetourTransactionCommit();
 
+#endif
       this->injected = true;
     }
   }
