@@ -1,5 +1,7 @@
 #pragma once
 
+#include <rogl/OglRenderer.h>
+
 #ifndef CINTERFACE
 #define CINTERFACE
 #define FUSE_MANUAL_CINTERFACE
@@ -79,11 +81,10 @@ struct OglDirectDrawSurface {
   GUID guid;
 
   DDSURFACEDESC2 desc;
-
-  void* buffer;
-
   IDirectDrawPalette* palette;
   unsigned int locked;
+
+  GLuint tex_id;
 };
 
 IDirectDrawSurface7* __stdcall OglDirectDrawCreateSurface(LPDDSURFACEDESC2 desc);

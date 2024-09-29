@@ -75,7 +75,7 @@
     <LibraryPath>../../Debug;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>lib/glad/include;../../lib/detours/include;../../fuse/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <IncludePath>.;lib/glad/include;../../lib/detours/include;../../fuse/include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>../../lib/detours/lib.X86;../../Release;$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -142,19 +142,23 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="IDirectDraw.cpp" />
-    <ClCompile Include="IDirectDrawPalette.cpp" />
-    <ClCompile Include="IDirectDrawSurface.cpp" />
+    <ClCompile Include="rogl\ddraw\IDirectDraw.cpp" />
+    <ClCompile Include="rogl\ddraw\IDirectDrawPalette.cpp" />
+    <ClCompile Include="rogl\ddraw\IDirectDrawSurface.cpp" />
     <ClCompile Include="lib\glad\src\gl.c" />
     <ClCompile Include="lib\glad\src\wgl.c" />
-    <ClCompile Include="OglRenderer.cpp" />
-    <ClCompile Include="render_ogl_main.cpp" />
+    <ClCompile Include="rogl\OglRenderer.cpp" />
+    <ClCompile Include="rogl\render_ogl_main.cpp" />
+    <ClCompile Include="rogl\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="IDirectDraw.h" />
-    <ClInclude Include="IDirectDrawPalette.h" />
-    <ClInclude Include="IDirectDrawSurface.h" />
-    <ClInclude Include="OglRenderer.h" />
+    <ClInclude Include="rogl\ddraw\IDirectDraw.h" />
+    <ClInclude Include="rogl\ddraw\IDirectDrawPalette.h" />
+    <ClInclude Include="rogl\ddraw\IDirectDrawSurface.h" />
+    <ClInclude Include="rogl\OglRenderer.h" />
+    <ClInclude Include="rogl\Platform.h" />
+    <ClInclude Include="rogl\Shader.h" />
+    <ClInclude Include="rogl\SpriteRenderer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

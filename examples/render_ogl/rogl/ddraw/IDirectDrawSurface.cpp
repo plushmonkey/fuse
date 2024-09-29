@@ -10,6 +10,7 @@
 #include <Windows.h>
 #include <fuse/Fuse.h>
 #include <memory.h>
+#include <rogl/Platform.h>
 #include <string.h>
 
 #include <format>
@@ -19,14 +20,12 @@
 #define INTERFACE OglDirectDrawSurface
 
 using namespace fuse;
+using namespace rogl;
 
 static OglDirectDrawSurfaceVtable vtable = {};
 
-static void DisplayMessage(std::string_view msg) {
-  MessageBox(NULL, msg.data(), "ogl_DirectDrawSurface", MB_OK);
-}
-
-// Chunk of memory to use for locked surfaces. This saves around 10MB of memory by having everything map here instead of malloc.
+// Chunk of memory to use for locked surfaces. This saves around 10MB of memory by having everything map here instead of
+// malloc.
 static char g_SurfaceBuffer[2048 * 2048 * 4];
 
 HRESULT __stdcall OglSurface_QueryInterface(OglDirectDrawSurface* This, REFIID riid, LPVOID FAR* ppvObj) {
@@ -137,7 +136,7 @@ HRESULT __stdcall OglSurface_GetColorKey(OglDirectDrawSurface* This, DWORD, LPDD
 
 HRESULT __stdcall OglSurface_GetDC(OglDirectDrawSurface* This, HDC FAR* hdc) {
   // DisplayMessage("GetDC");
-  *hdc = nullptr;
+  *hdc = (HDC)This->tex_id;
   return S_OK;
 }
 
@@ -198,13 +197,13 @@ HRESULT __stdcall OglSurface_Lock(OglDirectDrawSurface* This, LPRECT region, LPD
 
   memcpy(desc, &This->desc, This->desc.dwSize);
 
-  //desc->lpSurface = (u8*)This->buffer;
+  // desc->lpSurface = (u8*)This->buffer;
   desc->lpSurface = g_SurfaceBuffer;
 
 #if 0
   if (region) {
     desc->lpSurface = (u8*)This->buffer + region->top * This->desc.lPitch +
-                      region->left * (This->desc.ddpfPixelFormat.dwRGBBitCount / 8);
+      region->left * (This->desc.ddpfPixelFormat.dwRGBBitCount / 8);
   }
 #endif
 
@@ -389,13 +388,12 @@ IDirectDrawSurface7* __stdcall OglDirectDrawCreateSurface(LPDDSURFACEDESC2 desc)
   surface->desc = *desc;
   surface->desc.lPitch = surface->desc.dwWidth * (surface->desc.ddpfPixelFormat.dwRGBBitCount / 8);
 
-  size_t size = surface->desc.lPitch * surface->desc.dwHeight;
-  //surface->buffer = malloc(size);
-  //memset(surface->buffer, 0, size);
-  surface->buffer = 0;
-
   surface->locked = 0;
   surface->palette = 0;
+
+  size_t size = surface->desc.lPitch * surface->desc.dwHeight;
+
+  surface->tex_id = OglRenderer::Get().CreateTexture();
 
   // DisplayMessage(std::format("Creating surface {}, {}, {}", surface->desc.dwWidth, surface->desc.dwHeight, size));
 

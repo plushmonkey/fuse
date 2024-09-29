@@ -1,6 +1,7 @@
 #include "OglRenderer.h"
 
 #include <fuse/Fuse.h>
+#include <rogl/Platform.h>
 
 #include <format>
 #include <string>
@@ -8,14 +9,7 @@
 
 using namespace fuse;
 
-static void DisplayMessage(std::string_view msg) {
-  MessageBox(NULL, msg.data(), "OglRenderer", MB_OK);
-}
-
-static void Error(std::string_view msg) {
-  MessageBox(NULL, msg.data(), "OglRenderer", MB_OK | MB_ICONERROR);
-  exit(0);
-}
+namespace rogl {
 
 OglRenderer& OglRenderer::Get() {
   static OglRenderer instance;
@@ -30,6 +24,27 @@ void OglRenderer::Render() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   SwapBuffers(hdc);
+}
+
+GLuint OglRenderer::CreateTexture() {
+  GLuint tex_id = -1;
+
+  glGenTextures(1, &tex_id);
+  glBindTexture(GL_TEXTURE_2D, tex_id);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_LOD, 0);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAX_LOD, 0);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+  return tex_id;
+}
+
+void OglRenderer::UploadTexture(GLuint tex_id, int width, int height, u8* data, size_t size) {
+  glBindTexture(GL_TEXTURE_2D, tex_id);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
 }
 
 void OglRenderer::CreateContext() {
@@ -60,17 +75,17 @@ void OglRenderer::CreateContext() {
 
   int pfd_idx = ChoosePixelFormat(hdc, &pfd);
   if (pfd_idx == 0) {
-    Error("Failed to choose pixel format for context bootstrapping.");
+    Fatal("Failed to choose pixel format for context bootstrapping.");
   }
 
   if (!SetPixelFormat(hdc, pfd_idx, &pfd)) {
-    Error("Failed to SetPixelFormat for context bootstrapping.");
+    Fatal("Failed to SetPixelFormat for context bootstrapping.");
   }
 
   HGLRC temp_context = wglCreateContext(hdc);
 
   if (!wglMakeCurrent(hdc, temp_context)) {
-    Error("Failed to wglMakeCurrent for temp context.");
+    Fatal("Failed to wglMakeCurrent for temp context.");
   }
 
   gladLoaderLoadWGL(hdc);
@@ -79,8 +94,8 @@ void OglRenderer::CreateContext() {
   int attributes[] = {
     WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
     WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-    WGL_CONTEXT_FLAGS_ARB,
-    WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+    WGL_CONTEXT_FLAGS_ARB, WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+    WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
     0
   };
   // clang-format on
@@ -89,7 +104,7 @@ void OglRenderer::CreateContext() {
 
   if (!hgl) {
     wglDeleteContext(temp_context);
-    Error("Failed to create OpenGL context");
+    Fatal("Failed to create OpenGL context");
   }
 
   wglMakeCurrent(NULL, NULL);
@@ -99,7 +114,7 @@ void OglRenderer::CreateContext() {
   if (!gladLoaderLoadGL()) {
     wglMakeCurrent(NULL, NULL);
     wglDeleteContext(hgl);
-    Error("Glad loader failed.");
+    Fatal("Glad loader failed.");
   }
 }
 
@@ -116,3 +131,5 @@ void OglRenderer::DestroyContext() {
   hdc = nullptr;
   hwnd = nullptr;
 }
+
+}  // namespace rogl

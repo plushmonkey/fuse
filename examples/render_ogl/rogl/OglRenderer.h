@@ -4,10 +4,16 @@
 //
 #include <fuse/Fuse.h>
 
+namespace rogl {
+
+// TODO: Track textures given out so they can be cleaned up.
 struct OglRenderer {
   void CreateContext();
   void DestroyContext();
   void Render();
+
+  GLuint CreateTexture();
+  void UploadTexture(GLuint tex_id, int width, int height, fuse::u8* data, size_t size);
 
   HGLRC hgl = nullptr;
   HWND hwnd = nullptr;
@@ -18,3 +24,5 @@ struct OglRenderer {
  private:
   OglRenderer() {}
 };
+
+}  // namespace rogl

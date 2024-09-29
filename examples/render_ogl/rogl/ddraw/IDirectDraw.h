@@ -1,6 +1,6 @@
 #pragma once
 
-#include "OglRenderer.h"
+#include <rogl/OglRenderer.h>
 
 #ifndef CINTERFACE
 #define CINTERFACE

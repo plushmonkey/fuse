@@ -10,6 +10,7 @@
 #include <Windows.h>
 #include <fuse/Fuse.h>
 #include <memory.h>
+#include <rogl/Platform.h>
 #include <string.h>
 
 #include <format>
@@ -19,12 +20,9 @@
 #define INTERFACE OglDirectDrawPalette
 
 using namespace fuse;
+using namespace rogl;
 
 static OglDirectDrawPaletteVtable vtable = {};
-
-static void DisplayMessage(std::string_view msg) {
-  MessageBox(NULL, msg.data(), "ogl_DirectDrawPalette", MB_OK);
-}
 
 HRESULT __stdcall OglPalette_QueryInterface(OglDirectDrawPalette* This, REFIID riid, LPVOID FAR* ppvObj) {
   if (!*ppvObj) return E_INVALIDARG;

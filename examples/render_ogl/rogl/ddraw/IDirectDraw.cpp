@@ -10,6 +10,7 @@
 #include <Windows.h>
 #include <fuse/Fuse.h>
 #include <memory.h>
+#include <rogl/Platform.h>
 #include <string.h>
 
 #include <format>
@@ -19,18 +20,15 @@
 #pragma comment(lib, "ddraw.lib")
 #pragma comment(lib, "dxguid.lib")
 
-#include "IDirectDrawPalette.h"
-#include "IDirectDrawSurface.h"
+#include <rogl/ddraw/IDirectDrawPalette.h>
+#include <rogl/ddraw/IDirectDrawSurface.h>
 
 #define INTERFACE OglDirectDraw
 
 using namespace fuse;
+using namespace rogl;
 
 static OglDirectDrawVtable vtable = {};
-
-static void DisplayMessage(std::string_view msg) {
-  MessageBox(NULL, msg.data(), "ogl_DirectDraw", MB_OK);
-}
 
 HRESULT __stdcall Ogl_QueryInterface(OglDirectDraw* This, REFIID riid, LPVOID FAR* ppvObj) {
   if (!*ppvObj) return E_INVALIDARG;
@@ -150,8 +148,8 @@ HRESULT __stdcall Ogl_CreateSurface(OglDirectDraw* This, LPDDSURFACEDESC2 desc, 
 
     if (caps & DDSCAPS_PRIMARYSURFACE) {
       // DisplayMessage(std::format("Creating primary surface."));
-      *surface = OglDirectDrawCreateSurface(desc);
       OglRenderer::Get().CreateContext();
+      *surface = OglDirectDrawCreateSurface(desc);
       return *surface ? S_OK : S_FALSE;
     } else {
       // DisplayMessage(std::format("Unknown caps: {}", desc->ddsCaps.dwCaps));
