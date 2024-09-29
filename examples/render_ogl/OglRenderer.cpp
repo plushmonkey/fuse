@@ -17,30 +17,45 @@ static void Error(std::string_view msg) {
   exit(0);
 }
 
+OglRenderer& OglRenderer::Get() {
+  static OglRenderer instance;
+  return instance;
+}
+
+void OglRenderer::Render() {
+  if (!this->hgl) return;
+
+  glViewport(0, 0, 1360, 768);
+  glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  SwapBuffers(hdc);
+}
+
 void OglRenderer::CreateContext() {
   this->hwnd = Fuse::Get().GetGameWindowHandle();
   this->hdc = GetDC(hwnd);
 
   // clang-format off
-	PIXELFORMATDESCRIPTOR pfd =
-	{
-		sizeof(PIXELFORMATDESCRIPTOR),
-		1,
-		PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    // Flags
-		PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
-		32,                   // Colordepth of the framebuffer.
-		0, 0, 0, 0, 0, 0,
-		0,
-		0,
-		0,
-		0, 0, 0, 0,
-		24,                   // Number of bits for the depthbuffer
-		8,                    // Number of bits for the stencilbuffer
-		0,                    // Number of Aux buffers in the framebuffer.
-		PFD_MAIN_PLANE,
-		0,
-		0, 0, 0
-	};
+  PIXELFORMATDESCRIPTOR pfd =
+  {
+    sizeof(PIXELFORMATDESCRIPTOR),
+    1,
+    PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER,    // Flags
+    PFD_TYPE_RGBA,        // The kind of framebuffer. RGBA or palette.
+    32,                   // Colordepth of the framebuffer.
+    0, 0, 0, 0, 0, 0,
+    0,
+    0,
+    0,
+    0, 0, 0, 0,
+    24,                   // Number of bits for the depthbuffer
+    8,                    // Number of bits for the stencilbuffer
+    0,                    // Number of Aux buffers in the framebuffer.
+    PFD_MAIN_PLANE,
+    0,
+    0, 0, 0
+  };
   // clang-format on
 
   int pfd_idx = ChoosePixelFormat(hdc, &pfd);
@@ -61,13 +76,13 @@ void OglRenderer::CreateContext() {
   gladLoaderLoadWGL(hdc);
 
   // clang-format off
-	int attributes[] = {
-				WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
-				WGL_CONTEXT_MINOR_VERSION_ARB, 2,
-				WGL_CONTEXT_FLAGS_ARB,
-				WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
-				0
-	};
+  int attributes[] = {
+    WGL_CONTEXT_MAJOR_VERSION_ARB, 3,
+    WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+    WGL_CONTEXT_FLAGS_ARB,
+    WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB,
+    0
+  };
   // clang-format on
 
   hgl = wglCreateContextAttribsARB(hdc, NULL, attributes);
@@ -89,6 +104,8 @@ void OglRenderer::CreateContext() {
 }
 
 void OglRenderer::DestroyContext() {
+  if (!hdc) return;
+
   if (hgl) {
     wglMakeCurrent(hdc, nullptr);
     wglDeleteContext(hgl);

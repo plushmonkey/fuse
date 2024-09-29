@@ -18,6 +18,7 @@ static int(WINAPI* RealSetDIBitsToDevice)(_In_ HDC hdc, _In_ int xDest, _In_ int
                                           _In_ CONST VOID* lpvBits, _In_ CONST BITMAPINFO* lpbmi,
                                           _In_ UINT ColorUse) = SetDIBitsToDevice;
 static ATOM(WINAPI* RealRegisterClassA)(const WNDCLASSA* wc) = RegisterClassA;
+static BOOL(WINAPI* RealDestroyWindow)(HWND hwnd) = DestroyWindow;
 
 static void DisplayMessage(std::string_view msg) {
   MessageBox(NULL, msg.data(), "render_ogl", MB_OK);
@@ -45,21 +46,23 @@ ATOM WINAPI OverrideRegisterClassA(const WNDCLASS* wc) {
   return RealRegisterClassA(&custom_wc);
 }
 
+BOOL WINAPI OverrideDestroyWindow(HWND hwnd) {
+  HWND game_window = Fuse::Get().GetGameWindowHandle();
+
+  if (hwnd == game_window) {
+    OglRenderer::Get().DestroyContext();
+  }
+
+  return RealDestroyWindow(hwnd);
+}
+
 class RenderOglHook final : public HookInjection {
  public:
   const char* GetHookName() override { return "RenderOgl"; }
 
   RenderOglHook() { Inject(); }
 
-  void OnUpdate() override {
-    if (!glViewport) return;
-
-    glViewport(0, 0, 1360, 768);
-    glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    SwapBuffers(GetDC(Fuse::Get().GetGameWindowHandle()));
-  }
+  void OnUpdate() override { OglRenderer::Get().Render(); }
 
   KeyState OnGetAsyncKeyState(int vKey) override { return {}; }
 
@@ -71,6 +74,7 @@ class RenderOglHook final : public HookInjection {
     DetourAttach(&(PVOID&)RealDirectDrawCreate, OverrideDirectDrawCreate);
     DetourAttach(&(PVOID&)RealSetDIBitsToDevice, OverrideSetDIBitsToDevice);
     DetourAttach(&(PVOID&)RealRegisterClassA, OverrideRegisterClassA);
+    DetourAttach(&(PVOID&)RealDestroyWindow, OverrideDestroyWindow);
     DetourTransactionCommit();
   }
 };

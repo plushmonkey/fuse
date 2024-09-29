@@ -7,8 +7,14 @@
 struct OglRenderer {
   void CreateContext();
   void DestroyContext();
+  void Render();
 
   HGLRC hgl = nullptr;
   HWND hwnd = nullptr;
   HDC hdc = nullptr;
+
+  static OglRenderer& Get();
+
+ private:
+  OglRenderer() {}
 };

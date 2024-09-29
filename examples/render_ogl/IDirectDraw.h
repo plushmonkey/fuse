@@ -59,8 +59,6 @@ struct OglDirectDraw {
 
   ULONG ref;
   GUID guid;
-
-  OglRenderer renderer;
 };
 
 IDirectDraw* __stdcall OglDirectDrawCreate();
