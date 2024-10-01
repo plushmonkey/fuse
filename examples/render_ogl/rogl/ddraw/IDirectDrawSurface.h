@@ -74,6 +74,12 @@ struct OglDirectDrawSurfaceVtable {
   STDMETHOD(GetLOD)(THIS_ LPDWORD) PURE;       // 30
 };
 
+enum SurfaceFlag {
+  SurfaceFlag_Primary = (1 << 0),
+  SurfaceFlag_RenderTarget = (1 << 1),
+};
+typedef unsigned int SurfaceFlags;
+
 struct OglDirectDrawSurface {
   OglDirectDrawSurfaceVtable* lpVtbl;
 
@@ -84,7 +90,9 @@ struct OglDirectDrawSurface {
   IDirectDrawPalette* palette;
   unsigned int locked;
 
+  GLuint fbo;
   GLuint tex_id;
+  SurfaceFlags flags;
 };
 
 IDirectDrawSurface7* __stdcall OglDirectDrawCreateSurface(LPDDSURFACEDESC2 desc);

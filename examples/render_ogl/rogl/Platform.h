@@ -5,6 +5,7 @@
 #endif
 
 #include <Windows.h>
+#include <rogl/Logger.h>
 
 #include <format>
 #include <string_view>

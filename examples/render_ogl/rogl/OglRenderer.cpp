@@ -2,6 +2,8 @@
 
 #include <fuse/Fuse.h>
 #include <rogl/Platform.h>
+#include <rogl/SpriteRenderer.h>
+#include <rogl/ddraw/IDirectDrawSurface.h>
 
 #include <format>
 #include <string>
@@ -11,19 +13,14 @@ using namespace fuse;
 
 namespace rogl {
 
+OglRenderer::OglRenderer() {
+  textures_allocated.reserve(64);
+  sprite_renderer = std::make_unique<SpriteRenderer>();
+}
+
 OglRenderer& OglRenderer::Get() {
   static OglRenderer instance;
   return instance;
-}
-
-void OglRenderer::Render() {
-  if (!this->hgl) return;
-
-  glViewport(0, 0, 1360, 768);
-  glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  SwapBuffers(hdc);
 }
 
 GLuint OglRenderer::CreateTexture() {
@@ -39,12 +36,46 @@ GLuint OglRenderer::CreateTexture() {
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+  textures_allocated.push_back(tex_id);
+
   return tex_id;
 }
 
-void OglRenderer::UploadTexture(GLuint tex_id, int width, int height, u8* data, size_t size) {
+void OglRenderer::CreateFramebuffer(OglDirectDrawSurface& surface, bool upload) {
+  GLuint framebuffer;
+
+  glGenFramebuffers(1, &framebuffer);
+  glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+
+  glBindTexture(GL_TEXTURE_2D, surface.tex_id);
+
+  if (upload) {
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, surface.desc.dwWidth, surface.desc.dwHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE,
+                 0);
+  }
+
+  glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, surface.tex_id, 0);
+
+  GLenum draw_buffers[1] = {GL_COLOR_ATTACHMENT0};
+  glDrawBuffers(1, draw_buffers);
+
+  GLenum frame_status = glCheckFramebufferStatus(GL_FRAMEBUFFER);
+  if (frame_status != GL_FRAMEBUFFER_COMPLETE) {
+    Fatal("Bad frame status during creation: {}", frame_status);
+  }
+
+  surface.fbo = framebuffer;
+}
+
+void OglRenderer::UploadTexture(OglDirectDrawSurface& surface, u8* data, size_t size) {
+  GLuint tex_id = surface.tex_id;
+  int width = surface.desc.dwWidth;
+  int height = surface.desc.dwHeight;
+
   glBindTexture(GL_TEXTURE_2D, tex_id);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+
+  CreateFramebuffer(surface);
 }
 
 void OglRenderer::CreateContext() {
@@ -116,12 +147,34 @@ void OglRenderer::CreateContext() {
     wglDeleteContext(hgl);
     Fatal("Glad loader failed.");
   }
+
+  RECT rect = {};
+  GetClientRect(this->hwnd, &rect);
+
+  surface_width = rect.right - rect.left;
+  surface_height = rect.bottom - rect.top;
+
+  if (!sprite_renderer->Initialize(surface_width, surface_height)) {
+    Fatal("Failed to initialize sprite renderer.");
+  }
+
+  glEnable(GL_DEPTH_TEST);
+  glDepthFunc(GL_LEQUAL);
+  glEnable(GL_SCISSOR_TEST);
+  wglSwapIntervalEXT(0);
 }
 
 void OglRenderer::DestroyContext() {
   if (!hdc) return;
 
   if (hgl) {
+    sprite_renderer->Destroy();
+
+    if (!textures_allocated.empty()) {
+      glDeleteTextures(textures_allocated.size(), textures_allocated.data());
+      textures_allocated.clear();
+    }
+
     wglMakeCurrent(hdc, nullptr);
     wglDeleteContext(hgl);
   }

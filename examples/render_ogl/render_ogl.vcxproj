@@ -147,14 +147,19 @@
     <ClCompile Include="rogl\ddraw\IDirectDrawSurface.cpp" />
     <ClCompile Include="lib\glad\src\gl.c" />
     <ClCompile Include="lib\glad\src\wgl.c" />
+    <ClCompile Include="rogl\Logger.cpp" />
     <ClCompile Include="rogl\OglRenderer.cpp" />
     <ClCompile Include="rogl\render_ogl_main.cpp" />
     <ClCompile Include="rogl\Shader.cpp" />
+    <ClCompile Include="rogl\SpriteRenderer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="rogl\Camera.h" />
     <ClInclude Include="rogl\ddraw\IDirectDraw.h" />
     <ClInclude Include="rogl\ddraw\IDirectDrawPalette.h" />
     <ClInclude Include="rogl\ddraw\IDirectDrawSurface.h" />
+    <ClInclude Include="rogl\Logger.h" />
+    <ClInclude Include="rogl\Math.h" />
     <ClInclude Include="rogl\OglRenderer.h" />
     <ClInclude Include="rogl\Platform.h" />
     <ClInclude Include="rogl\Shader.h" />

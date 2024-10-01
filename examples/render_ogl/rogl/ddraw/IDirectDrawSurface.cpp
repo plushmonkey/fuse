@@ -11,6 +11,7 @@
 #include <fuse/Fuse.h>
 #include <memory.h>
 #include <rogl/Platform.h>
+#include <rogl/SpriteRenderer.h>
 #include <string.h>
 
 #include <format>
@@ -73,9 +74,67 @@ HRESULT __stdcall OglSurface_AddOverlayDirtyRect(OglDirectDrawSurface* This, LPR
   return S_OK;
 }
 
-HRESULT __stdcall OglSurface_Blt(OglDirectDrawSurface* This, LPRECT rect, LPDIRECTDRAWSURFACE7 surface, LPRECT, DWORD,
-                                 LPDDBLTFX) {
-  // DisplayMessage("Blt");
+HRESULT __stdcall OglSurface_Blt(OglDirectDrawSurface* This, LPRECT dest_rect, LPDIRECTDRAWSURFACE7 source_surface,
+                                 LPRECT src_rect, DWORD flags, LPDDBLTFX fx) {
+  OglDirectDrawSurface* ogl_source_surface = (OglDirectDrawSurface*)source_surface;
+
+  if ((This->flags & SurfaceFlag_Primary) && source_surface) {
+    OglRenderer::Get().sprite_renderer->Present(*This, *ogl_source_surface);
+    return S_OK;
+  }
+
+  if (flags & DDBLT_COLORFILL) {
+    u32 fill_color = fx->dwFillColor;
+    float red = ((fill_color >> 0) & 0xFF) / 255.0f;
+    float green = ((fill_color >> 8) & 0xFF) / 255.0f;
+    float blue = ((fill_color >> 16) & 0xFF) / 255.0f;
+
+    glClearColor(red, green, blue, 1.0f);
+
+    if (!source_surface) {
+      Rectangle2f dest_rect_2f;
+
+      if (dest_rect) {
+        dest_rect_2f.min = Vector2f((float)dest_rect->left, (float)dest_rect->top);
+        dest_rect_2f.max = Vector2f((float)dest_rect->right, (float)dest_rect->bottom);
+      }
+
+      OglRenderer::Get().sprite_renderer->ClearTarget(*This, dest_rect ? &dest_rect_2f : nullptr);
+      return S_OK;
+    }
+  }
+
+  if (!source_surface) {
+    return S_OK;
+  }
+
+  if (src_rect) {
+    Rectangle2f rect;
+
+    rect.min = Vector2f((float)src_rect->left, (float)src_rect->top);
+    rect.max = Vector2f((float)src_rect->right, (float)src_rect->bottom);
+
+    Rectangle2f dest_rect_2f;
+
+    if (dest_rect) {
+      dest_rect_2f.min = Vector2f((float)dest_rect->left, (float)dest_rect->top);
+      dest_rect_2f.max = Vector2f((float)dest_rect->right, (float)dest_rect->bottom);
+    }
+
+    OglRenderer::Get().sprite_renderer->RenderToTarget(*This, dest_rect ? &dest_rect_2f : nullptr, *ogl_source_surface,
+                                                       &rect, flags & DDBLT_COLORFILL);
+  } else {
+    Rectangle2f dest_rect_2f;
+
+    if (dest_rect) {
+      dest_rect_2f.min = Vector2f((float)dest_rect->left, (float)dest_rect->top);
+      dest_rect_2f.max = Vector2f((float)dest_rect->right, (float)dest_rect->bottom);
+    }
+
+    OglRenderer::Get().sprite_renderer->RenderToTarget(*This, dest_rect ? &dest_rect_2f : nullptr, *ogl_source_surface,
+                                                       nullptr, flags & DDBLT_COLORFILL);
+  }
+
   return S_OK;
 }
 
@@ -136,7 +195,7 @@ HRESULT __stdcall OglSurface_GetColorKey(OglDirectDrawSurface* This, DWORD, LPDD
 
 HRESULT __stdcall OglSurface_GetDC(OglDirectDrawSurface* This, HDC FAR* hdc) {
   // DisplayMessage("GetDC");
-  *hdc = (HDC)This->tex_id;
+  *hdc = (HDC)This;
   return S_OK;
 }
 
@@ -379,6 +438,11 @@ IDirectDrawSurface7* __stdcall OglDirectDrawCreateSurface(LPDDSURFACEDESC2 desc)
   vtable.SetLOD = OglSurface_SetLOD;
   vtable.GetLOD = OglSurface_GetLOD;
 
+  if (!desc) {
+    DisplayMessage("No desc");
+    return nullptr;
+  }
+
   OglDirectDrawSurface* surface = (OglDirectDrawSurface*)malloc(sizeof(OglDirectDrawSurface));
 
   memcpy(&surface->guid, &IID_IDirectDrawSurface7, sizeof(surface->guid));
@@ -390,12 +454,24 @@ IDirectDrawSurface7* __stdcall OglDirectDrawCreateSurface(LPDDSURFACEDESC2 desc)
 
   surface->locked = 0;
   surface->palette = 0;
+  surface->flags = 0;
 
   size_t size = surface->desc.lPitch * surface->desc.dwHeight;
 
   surface->tex_id = OglRenderer::Get().CreateTexture();
+  surface->fbo = -1;
 
-  // DisplayMessage(std::format("Creating surface {}, {}, {}", surface->desc.dwWidth, surface->desc.dwHeight, size));
+  if (desc->dwFlags & DDSD_CAPS) {
+    DWORD caps = desc->ddsCaps.dwCaps;
+
+    if (caps & DDSCAPS_PRIMARYSURFACE) {
+      surface->flags |= SurfaceFlag_Primary;
+    } else if (OglRenderer::Get().textures_allocated.size() == 2) {
+      surface->flags |= SurfaceFlag_RenderTarget;
+    }
+  }
+
+  // DisplayMessage("Creating surface {}, {}, {}", surface->desc.dwWidth, surface->desc.dwHeight, size);
 
   return (IDirectDrawSurface7*)surface;
 }
