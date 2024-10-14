@@ -95,6 +95,7 @@ class HelloWorld final : public HookInjection {
 
         auto cap = Fuse::Get().GetShipStatus().capability;
 
+#if 0
         RenderDebugText(std::format("Can stealth: {}", cap.stealth != 0));
         RenderDebugText(std::format("Can cloak: {}", cap.cloak != 0));
         RenderDebugText(std::format("Can antiwarp: {}", cap.antiwarp != 0));
@@ -102,6 +103,16 @@ class HelloWorld final : public HookInjection {
         RenderDebugText(std::format("Can multifire: {}", cap.multifire != 0));
         RenderDebugText(std::format("Can prox: {}", cap.proximity != 0));
         RenderDebugText(std::format("Can bounce bullets: {}", cap.bouncing_bullets != 0));
+#endif
+        RenderDebugText(std::format("Guns: {}, Bombs: {}", Fuse::Get().GetShipStatus().guns, Fuse::Get().GetShipStatus().bombs));
+
+        RenderDebugText(std::format("Repels: {}", Fuse::Get().GetShipStatus().repels));
+        RenderDebugText(std::format("Bursts: {}", Fuse::Get().GetShipStatus().bursts));
+        RenderDebugText(std::format("Bricks: {}", Fuse::Get().GetShipStatus().bricks));
+        RenderDebugText(std::format("Rockets: {}", Fuse::Get().GetShipStatus().rockets));
+        RenderDebugText(std::format("Thors: {}", Fuse::Get().GetShipStatus().thors));
+        RenderDebugText(std::format("Decoys: {}", Fuse::Get().GetShipStatus().decoys));
+        RenderDebugText(std::format("Portals: {}", Fuse::Get().GetShipStatus().portals));
 
         RenderDebugText(std::format("Status: {}", player->status));
       }

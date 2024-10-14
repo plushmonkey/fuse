@@ -539,6 +539,17 @@ void Fuse::ReadPlayers() {
       ship_status.thrust = *(u32*)(player_addr + 0x244) + *(u32*)(player_addr + 0x248);
       ship_status.speed = *(u32*)(player_addr + 0x350) + *(u32*)(player_addr + 0x354);
 
+      ship_status.guns = *(u32*)(player_addr + 0x298) + *(u32*)(player_addr + 0x29C);
+      ship_status.bombs = *(u32*)(player_addr + 0x2A0) + *(u32*)(player_addr + 0x2A4);
+
+      ship_status.repels = *(u32*)(player_addr + 0x2B0) + *(u32*)(player_addr + 0x2B4);
+      ship_status.bursts = *(u32*)(player_addr + 0x2B8) + *(u32*)(player_addr + 0x2BC);
+      ship_status.bricks = *(u32*)(player_addr + 0x2C0) + *(u32*)(player_addr + 0x2C4);
+      ship_status.rockets = *(u32*)(player_addr + 0x2C8) + *(u32*)(player_addr + 0x2CC);
+      ship_status.thors = *(u32*)(player_addr + 0x2D0) + *(u32*)(player_addr + 0x2D4);
+      ship_status.decoys = *(u32*)(player_addr + 0x2D8) + *(u32*)(player_addr + 0x2DC);
+      ship_status.portals = *(u32*)(player_addr + 0x2E0) + *(u32*)(player_addr + 0x2E4);
+
       u32 capabilities = *(u32*)(player_addr + 0x2EC);
       u32 cloak_stealth = *(u32*)(player_addr + 0x2E8);
 

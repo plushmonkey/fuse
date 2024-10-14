@@ -63,6 +63,18 @@ struct ShipStatus {
   u32 rotation = 0;
   u32 shrapnel = 0;
 
+  u32 guns = 0;
+  u32 bombs = 0;
+
+  u32 repels = 0;
+  u32 bursts = 0;
+  u32 bricks = 0;
+  u32 rockets = 0;
+  u32 thors = 0;
+  u32 decoys = 0;
+  u32 portals = 0;
+  
+
   ShipCapability capability;
 };
 
